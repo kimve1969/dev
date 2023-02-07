@@ -1,6 +1,3 @@
-// as change token on github
-github \ settings \ developer settings \ personal access tokens
-
 // my token
 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	07/02/2023
 
@@ -33,9 +30,6 @@ clang file.cpp -o file -lstdc++ -pthread
 -shared // create shared library
 -E // preproccesing
 
-// tree of processes
-pstree
-
 // 
 nm <file>
 c++filt <simbol from file>
@@ -45,15 +39,12 @@ c++filt <simbol from file>
 // link with -fsanitize=thread
 // run and get data races printed to stderr
 clang file.cpp -o file -lstdc++ -pthread -fPIC -fsanitize=thread
-./thread
 
 // file.ii is listing afetr preprocessing #if, #define 
 clang -E file.cpp -o file.ii
-emacs file.ii
 
 // file.asm is assembler code
 clang -S file.cpp -o file.asm
-emacs file.asm
 
 // compile debug version and run in gdb
 clang -g file.cpp -o file
