@@ -21,7 +21,8 @@ install:
 	apt install pkg-config
 	apt install python3
 	rm -f python			# delete sybmol link 
-	ln -s python /usr/bin/python3	# create symbol link to python3
+	ln -s /usr/bin/python3 /usr/bin/python	# create symbol link to python3
+	ln -s /usr/bin/python /usr/bin/py
 	apt install pip3
 	apt install doxygen
 
@@ -53,7 +54,7 @@ install:
         apt install libgtest-dev libgmock-dev
         apt install libtbb-dev                                                                                       
         apt install cmake                                                                                             
-        cd /usr/src/goooletest                                                                                        
+        cd /usr/src/googletest                                                                                        
         mkdir build                                                                                                   
         cd build                                                                                                      
         cmake ..                                                                                                      

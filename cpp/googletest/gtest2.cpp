@@ -13,5 +13,8 @@ TEST(TestGroupName, Subtest_2){
 int main(int argc, char* argv[]){
   ::testing::InitGoogleTest(&argc, argv);
 
-  return RUN_ALL_TESTS();
+  //return RUN_ALL_TESTS();
+  int res = RUN_ALL_TESTS();
+  std::cout<<"code result of RUN_ALL_TESTS() is "<<res<<"\n";
+  return 0;
 }

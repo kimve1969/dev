@@ -1,0 +1,31 @@
+#include<iostream>
+#include<type_traits>
+
+
+int main(){
+  std::cout<<"*****************  Reference collapsing *******************************\n";
+
+  //int& a[3]; // error: array of references
+  //int&* a;   // error: pointer to reference
+  //int& &a;   // error: reference of reference
+  
+  typedef int & lref;
+  typedef int && rref;
+
+  int n{0};
+  lref&  r1 = n;
+  lref&& r2 = n;
+  rref&  r3 = n;
+  rref&& r4 = 1;
+
+  std::cout<<std::boolalpha;
+  std::cout<<"lref is lvalue - "<<std::is_lvalue_reference<lref>::value<<std::endl;
+  std::cout<<"lref& is lvalue - "<<std::is_lvalue_reference<lref&>::value<<std::endl;
+  std::cout<<"lref&& is lvalue - "<<std::is_lvalue_reference<lref&&>::value<<std::endl;
+  std::cout<<"rref is rvalue - "<<std::is_rvalue_reference<rref>::value<<std::endl;
+  std::cout<<"rref& is lvalue - "<<std::is_lvalue_reference<rref&>::value<<std::endl;
+  std::cout<<"rref&& is rvalue - "<<std::is_rvalue_reference<rref&&>::value<<" !!! "<<std::endl;
+
+  std::cout<<"********************* End *************************************\n";
+  return 0;
+}
