@@ -13,21 +13,31 @@
   Character of processor of my Samsung Galaxy Tab S7, SM-T875
   processor Qualcomm Snapdragon 865 Plus, 8 core, 3.1 GHz (1 core - 2.84 GHz, 3 core - 2.42 GHz, 4 core - 1.8 GHz)
   TPP (for 1.8 GHz) = 1.8 GFLOPS
-  RAM 6144 Mb, LPDDR4 / 128 Gb
+  RAM 6144 Mb, LPDDR4 2750 MHz, BW =   44 Gb/s or 5,5 GB/s
+  L1 - 512 Kb, L2 - 1 Mb, L3 - 4 Mb
 */
 
-int N=330'000'123;
+#ifdef __GNUC__
+#define ALIGN(N) __attribute__((aligned(N))) // Linux
+#else
+#define ALIGN(N) __declspec(align(N)) // Windows
+#endif
+
+ALIGN(64) int N=330'000'123;
 
 template<typename T> void tadd();
 template<int K> void tadd(){  
-    double a = 1.0, result = 0.0, t = 0.0;
+    ALIGN(64) double a = 1.0;
+    ALIGN(64) double result = 0.0;
+    ALIGN(64) double t = 0.0;
+    
     t = omp_get_wtime();
     
-    double result_tmp[K];
+    ALIGN(64) double result_tmp[K];
     for(int i=0; i<K; ++i) result_tmp[i]=0;
       
     for(int i=0; i<N/K; ++i){
-      for(int j=0; j<K; ++j) result_tmp[j] += a; // compile with option -O3 unroll loop
+      for(int j=0; j<K; ++j) result_tmp[j] += a; // unrolling loop
     }
       
     for(int i=0; i<N%K; ++i) result += a;
@@ -40,14 +50,17 @@ template<int K> void tadd(){
 
 template<typename T> void tmul();
 template<int K> void tmul(){
-    double a = 1.000'000'1, result = 1.0, t = 0.0;
+    ALIGN(64) double a = 1.000'000'1;
+    ALIGN(64) double result = 1.0;
+    ALIGN(64) double t = 0.0;
+  
     t = omp_get_wtime();
  
-    double result_tmp[K];
+    ALIGN(64) double result_tmp[K];
     for(int i=0; i<K; ++i) result_tmp[i]=1.0;
       
     for(int i=0; i<N/K; ++i){
-      for(int j=0; j<K; ++j) result_tmp[j] *= a; // compile with option -O3 unroll loop
+      for(int j=0; j<K; ++j) result_tmp[j] *= a; // unrolling loop
     }
       
     for(int i=0; i<N%K; ++i) result *= a;
