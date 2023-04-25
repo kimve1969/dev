@@ -1,8 +1,9 @@
 #include<iostream>
 #include<iomanip>
 #include<omp.h>
-#include<emmintrin.h> // under Intel CPU
-//#include<arm_neon.h> // under ARM CPU
+//#include<emmintrin.h> // under Intel CPU
+//#include<xmmintin.h> // under Intel CPU
+#include<arm_neon.h> // under ARM CPU
 /*
   see page 65 of book, use intrinsic compile
   2.5.2 SIMD extention
@@ -34,12 +35,12 @@ int main(int argc, char* argv[]){
       _mm_add_pd( result_tmp, aa); // using SIMD (single instruction multiple data) on FMA unit
     }
       
-    for(int i=0; i<N%*2; ++i) result += a;
+    for(int i=0; i<N%2; ++i) result += a;
       
     result += ((double*)(&result_tmp))[0] + ((double*)(&result_tmp))[1];
     
     t = omp_get_wtime()-t;
-    std::cout<<K<<". result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
+    std::cout<<"2. result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
   }
 
   /*result = 0.0;

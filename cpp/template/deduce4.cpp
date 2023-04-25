@@ -29,7 +29,8 @@ int main(){
 
   f(a); // expr - int [13] => T - int, param - int*, f<int>(int)
   f(pa); // expr - int const* => T - int const, param - int const*, f<int const>(int const*)
-  f(ppa); // expr - int** => T - int*, param - int**, f<int*>(int**)
+  f(
+    ppa); // expr - int** => T - int*, param - int**, f<int*>(int**)
   f(g); // expr - int (int) => T - int (int), param - int (*)(int), f<int (int)>(int (*)(int)
   
   return 0;

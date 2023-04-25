@@ -65,6 +65,8 @@ install:
 
 #5. Run all tests from ./blaspp/test/
 	python run_tests.py
+#Install openmpi
+	apt install openmpi-bin
 math:
 	apt install octave 		# see man octave, octave --help
 cppman:

@@ -1,6 +1,7 @@
 #include<iostream>
 #include<iomanip>
 #include<omp.h>
+#include<cmath>
 /*
   see page 61 of book
 
