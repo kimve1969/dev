@@ -31,7 +31,7 @@
 #endif
 
 int main(int argc, char* argv[]){
-  long N{20}, SIZE_LBLOCK{0}, result{0}, asum{0}, *lptr{nullptr};
+  long N{100}, SIZE_LBLOCK{0}, result{0}, asum{0}, *lptr{nullptr};
   double t{0.0};
 
   if(argc < 2){

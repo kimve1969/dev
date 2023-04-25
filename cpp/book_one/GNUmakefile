@@ -3,7 +3,7 @@
 	./exam-005
 	rm exam-005
 4:
-	g++ exam-004.cpp -o exam-004 -lstdc++ -fopenmp -std=c++17 -O3
+	g++ exam-004.cpp -o exam-004 -lstdc++ -fopenmp -std=c++17 -O3 #-O3
 	./exam-004 4096
 	./exam-004 8192
 	./exam-004 16384
@@ -13,11 +13,12 @@
 	./exam-004 524288
 	./exam-004 1048576
 	./exam-004 4194304
-	./exam-004 8388608
-	./exam-004 16777216
-	./exam-004 33554432
-	./exam-004 67108864
+	valgrind --tool=cachegrind ./exam-004 65536 #
+	valgrind --tool=cachegrind ./exam-004 67000 #
+	valgrind --tool=cachegrind ./exam-004 262144 #
+	valgrind --tool=cachegrind ./exam-004 264000 #
 	rm exam-004
+	rm cachegrind.out.*
 3:
 	g++ exam-003-p66.cpp -o exam-003-p66 -lstdc++ -fopenmp -std=c++17 -O3
 	./exam-003-p66

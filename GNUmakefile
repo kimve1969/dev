@@ -25,7 +25,7 @@ install:
 	ln -s /usr/bin/python /usr/bin/py
 	apt install pip3
 	apt install doxygen
-
+	apt install valgrind
 #2. Install CBLAS, OPENBLAS, LAPACK and othes...                                                                                       
 	apt install libblas-dev
 	apt install libopenblas-dev
