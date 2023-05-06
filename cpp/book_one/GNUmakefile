@@ -3,20 +3,24 @@
 	./exam-005
 	rm exam-005
 4:
-	g++ exam-004.cpp -o exam-004 -lstdc++ -fopenmp -std=c++17 -O3 #-O3
+	clear
+	g++ exam-004.cpp -o exam-004 -lstdc++ -fopenmp -std=c++17 -O3
 	./exam-004 4096
 	./exam-004 8192
 	./exam-004 16384
 	./exam-004 65536
-	./exam-004 131072
 	./exam-004 262144
 	./exam-004 524288
 	./exam-004 1048576
 	./exam-004 4194304
-	valgrind --tool=cachegrind ./exam-004 65536 #
-	valgrind --tool=cachegrind ./exam-004 67000 #
-	valgrind --tool=cachegrind ./exam-004 262144 #
-	valgrind --tool=cachegrind ./exam-004 264000 #
+	@echo "**************************************** Valrind test **************************"
+	@echo "	--tool=cachgrind"
+	@echo ""
+	valgrind --tool=cachegrind --D1=16384,2,64 --L2=524288,2,64 ./exam-004 16000 #
+	valgrind --tool=cachegrind --D1=16384,2,64 --L2=524288,2,64 ./exam-004 17000 #
+	valgrind --tool=cachegrind --D1=16384,2,64 --L2=524288,2,64 ./exam-004 524288 #
+	valgrind --tool=cachegrind --D1=16384,2,64 --L2=524288,2,64 ./exam-004 550000 #
+	valgrind --tool=memcheck ./exam-004 16000
 	rm exam-004
 	rm cachegrind.out.*
 3:
