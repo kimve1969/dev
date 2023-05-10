@@ -18,6 +18,11 @@ install:
 	apt install vim
 	apt install man
 	apt install emacs
+	apt install build-essential # GNU gcc
+	apt install clang	# clang
+	apt install openmpi-bin # open mpi
+	apt install valgrind	# valgring [--tool=memcheck | --tool=cache]
+	apt install gdb		# GNU debuger
 	apt install pkg-config
 	apt install python3
 	rm -f python			# delete sybmol link 
@@ -25,7 +30,6 @@ install:
 	ln -s /usr/bin/python /usr/bin/py
 	apt install pip3
 	apt install doxygen
-	apt install valgrind
 #2. Install CBLAS, OPENBLAS, LAPACK and othes...                                                                                       
 	apt install libblas-dev
 	apt install libopenblas-dev
@@ -65,8 +69,6 @@ install:
 
 #5. Run all tests from ./blaspp/test/
 	python run_tests.py
-#Install openmpi
-	apt install openmpi-bin
 math:
 	apt install octave 		# see man octave, octave --help
 cppman:

@@ -1,3 +1,7 @@
+5:
+	g++ list3.cpp -o list3 -lstdc++ -std=c++17 -g
+	./list3
+	rm list3
 4:
 	g++ list2.cpp -o list2 -lstdc++ -std=c++17
 	./list2
