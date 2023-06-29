@@ -60,10 +60,10 @@ template<int K> void tmul(){
     for(int i=0; i<K; ++i) result_tmp[i]=1.0;
       
     for(int i=0; i<N/K; ++i){
-      for(int j=0; j<K; ++j) result_tmp[j] *= a; // unrolling loop
+      for(int j=0; j<K; ++j) result_tmp[j] /= a; // unrolling loop
     }
       
-    for(int i=0; i<N%K; ++i) result *= a;
+    for(int i=0; i<N%K; ++i) result /= a;
       
     for(int j=0; j<K; ++j) result *= result_tmp[j];
     

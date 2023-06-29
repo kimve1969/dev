@@ -97,34 +97,12 @@ int main(int argc, char* argv[]){
   ALIGN(64) double t = 0.0;
   ALIGN(64) int N=330'000'123;
 
-  {
+  /*{
     t = omp_get_wtime();
 
     for(int i=0; i<N; ++i) result += a;
       
     t = omp_get_wtime()-t;
     std::cout<<"1. result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
-  }
-
+    }*/
   
-  result = 0.0;
-  {
-    t = omp_get_wtime();
-    
-    ALIGN(64) double result_tmp[2]={0.0, 0.0};
-      
-    for(int i=0; i<N/2; ++i){
-      result_tmp[0] += a; // unrolling loop
-      result_tmp[1] += a;
-    }
-      
-    for(int i=0; i<N%2; ++i) result += a;
-      
-    result += result_tmp[0] + result_tmp[1];
-    
-    t = omp_get_wtime()-t;
-    std::cout<<"2. result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
-  }
-  
-  return 0;
-}
