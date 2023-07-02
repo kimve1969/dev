@@ -1,13 +1,14 @@
 #include<iostream>
 #include<string>
 #include<vector>
-#define CL_TARGET_OPENCL_VERSION 300
+#define CL_TARGET_OPENCL_VERSION 100
 #include<CL/cl.h>
-#define CL_HPP_TARGET_OPENCL_VERSION 300
-#include<CL/opencl.hpp>
+//#define CL_HPP_TARGET_OPENCL_VERSION 300
+//#include<CL/opencl.hpp>
 #include<cstdio>
 #include<cmath>
 #include<cstdlib>
+#include<cstring>
 
 void CL_ASSERT(const char* pstr_mess, cl_int clErr){
   if( clErr != CL_SUCCESS ){
@@ -29,9 +30,44 @@ void CL_ERROR(const char* pstr_mess1, const char *pstr_mess2){
 int main(int argc, char* argv[]){
   std::cout<<"Start\n\n";
   
-  const cl_int devID = 0; //
-  std::string platformName = "Portable Computing Language"; //"Intel Gen OCL Driver"; // "NVIDIA CUDA"  "Intel(R) OpenCL"  "AMD"
+  std::string  platformName = "Portable Computing Language";
+  const cl_int devID = 0;
+  
+  /*
+  see platform on your computer on Linux: clinfo
+  example on my noteebok Lenovo:
 
+  Platform Name                                   Portable Computing Language
+  Number of devices                               1
+  Device Name                                     pthread-Intel(R) Core(TM) i5-1035G1 CPU @ 1.00GH
+  Device Type                                     CPU
+  Device OpenCL C Version                         OpenCL C 1.2 pocl
+  Max compute units                               3
+  Max work item dimensions                        3
+  Max work item sizes                             4096x4096x4096
+  Max work group size                             4096
+  Preferred work group size multiple (kernel)     8
+  Double-precision Floating-point support         (cl_khr_fp64)
+  Address bits                                    64, Little-Endian
+  Global memory size                              1559239680 (1.452GiB)
+  Local memory type                               Global
+  Local memory size                               524288 (512KiB)
+  Max number of constant args                     8
+  Max constant buffer size                        524288 (512KiB)
+  Max size of kernel argument                     1024
+  Queue properties                                
+    Out-of-order execution                        Yes
+    Profiling                                     Yes
+  Execution capabilities                          
+    Run OpenCL kernels                            Yes
+    Run native kernels                            Yes
+  printf() buffer size                            16777216 (16MiB)
+    
+  Platform Name                                   Intel Gen OCL Driver
+     Number of devices 0
+  Platform Name                                   Clover
+     Number of devices
+  */
   cl_context clContext;
   cl_command_queue clQueue;
   cl_program clProgram;
@@ -97,7 +133,7 @@ int main(int argc, char* argv[]){
     CL_ASSERT("clCreateContext error: ", clErr);
 
     // COMMAND QUEUE
-    clQueue = clCreateCommandQueue(clContext, deviceList[devID], 0, &clErr);
+    clQueue = clCreateCommandQueue(clContext, deviceList[devID], CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &clErr);
     CL_ASSERT("clCreateCommandQueue error: ", clErr);
 
     // PROGRAM
@@ -117,21 +153,22 @@ int main(int argc, char* argv[]){
       std::rewind(fd);
 
       cSourceCL = new char[fileSize + 1/* zero-terminated */];
+      std::cout<<"size of kernel-file is "<<fileSize<<" bytes\n";
       size_t nd = std::fread( cSourceCL, 1, fileSize, fd);
       if( nd != fileSize ) CL_ERROR("Failed to read kernel-program from file ",  cKernelFile);
       cSourceCL[ fileSize ] = '\0';
-      std::cout<<"Text program = "<<cSourceCL<<"\n";
+      std::cout<<"Text program:\n\n"<<cSourceCL<<"\n";
     }
     if( cSourceCL == NULL ) CL_ERROR("Can't get kernel-program from file ", cKernelFile);
 
     // load kernel to OpenCL
     size_t szKernelLength = strlen( cSourceCL );
-    clProgram = clCreateProgramWithSource( clContext, 1, (const char **) &cSourceCL, &szKernelLength, &clErr);
+    clProgram = clCreateProgramWithSource( clContext, 1 /* ncount of pointers string of cSourceCL  */, (const char **) &cSourceCL, &szKernelLength, &clErr);
     CL_ASSERT("clCreatProgramWithSource error: ", clErr);
 
     // compile kernel-program
     std::cout<<"clBuildProgram...";
-    clErr = clBuildProgram(clProgram, 0, NULL, "-cl-mad-enable", NULL, NULL);
+    clErr = clBuildProgram(clProgram, 0, NULL, /*"-cl-mad-enable"*/ "-g", NULL, NULL);
     CL_ASSERT("clBuildProgram error: ", clErr);
     std::cout<<"done\n";
 
@@ -159,21 +196,20 @@ int main(int argc, char* argv[]){
   CL_ASSERT("clCreateKernel", clErr);
   std::cout<<"done\n";
 
-  const int N=32; //1'000'123; // size of test vectors
+  const int N = 64; //1'000'123; // size of test vectors
 
   // create BUFFERS on GPU
   std::cout<<"Creating openCL buffers for X and Y...";
-  cl_mem clX = clCreateBuffer( clContext, CL_MEM_READ_WRITE, N*sizeof(double), NULL, &clErr );
+  cl_mem clX = clCreateBuffer( clContext, CL_MEM_READ_WRITE, N*sizeof(float), NULL, &clErr );
   CL_ASSERT("clCreateBuffer", clErr);
-  cl_mem clY = clCreateBuffer( clContext, CL_MEM_READ_WRITE, N*sizeof(double), NULL, &clErr );
+  cl_mem clY = clCreateBuffer( clContext, CL_MEM_READ_WRITE, N*sizeof(float), NULL, &clErr );
   CL_ASSERT("clCreateBuffer", clErr);
   std::cout<<"done\n";
-  std::cout<<"size of clX = "<<sizeof(clX)<<"\n";
   // TEST EXECUTION
   // data on CPU side
-  double *X = new double[N];
-  double *Y = new double[N];
-  const double a = 1.234, b = 3.456;
+  float *X = new float[N];
+  float *Y = new float[N];
+  const float a = 1.234, b = 3.456;
 
   // fill vectors
   for(int i=0; i<N; ++i){
@@ -183,9 +219,9 @@ int main(int argc, char* argv[]){
 
   // copy vectors to device
   std::cout<<"Copy vectors X & Y to device...";
-  clErr = clEnqueueWriteBuffer( clQueue, clX, CL_TRUE, 0, N*sizeof(double), X, 0, NULL, NULL );
+  clErr = clEnqueueWriteBuffer( clQueue, clX, CL_TRUE, 0, N*sizeof(float), X, 0, NULL, NULL );
   CL_ASSERT("clEnqueueWriteBuffer", clErr);
-  clErr = clEnqueueWriteBuffer( clQueue, clY, CL_TRUE, 0, N*sizeof(double), Y, 0, NULL, NULL );
+  clErr = clEnqueueWriteBuffer( clQueue, clY, CL_TRUE, 0, N*sizeof(float), Y, 0, NULL, NULL );
   CL_ASSERT("clEnqueueWriteBuffer", clErr);
   std::cout<<"done\n";
 
@@ -199,8 +235,8 @@ int main(int argc, char* argv[]){
   clSetKernelArg( knlAXPBY, 0, sizeof(int), (void*) &N );
   clSetKernelArg( knlAXPBY, 1, sizeof(cl_mem), (void*) &clX );
   clSetKernelArg( knlAXPBY, 2, sizeof(cl_mem), (void*) &clY );
-  clSetKernelArg( knlAXPBY, 3, sizeof(double), (void*) &a );
-  clSetKernelArg( knlAXPBY, 4, sizeof(double), (void*) &b );
+  clSetKernelArg( knlAXPBY, 3, sizeof(float), (void*) &a );
+  clSetKernelArg( knlAXPBY, 4, sizeof(float), (void*) &b );
   std::cout<<"done\n";
   
   // send to run
@@ -208,8 +244,8 @@ int main(int argc, char* argv[]){
   clErr = clEnqueueNDRangeKernel( clQueue, knlAXPBY, 1, NULL, &gws, &lws, 0, NULL, NULL );
   CL_ASSERT("clEnqueueNDRangeKernel", clErr);
   std::cout<<"done\n"<<std::endl;
+  clFlush(clQueue);
   clFinish(clQueue); //wait finish
-  std::cout<<"done\n";
 
   // do same work on CPU
   for(int i=0; i<N; ++i){
@@ -217,12 +253,12 @@ int main(int argc, char* argv[]){
   }
 
   // get result from device
-  double *R = new double[N];
-  clErr = clEnqueueReadBuffer( clQueue, clX, CL_TRUE, 0, N*sizeof(double), R, 0, NULL, NULL );
+  float *R = new float[N];
+  clErr = clEnqueueReadBuffer( clQueue, clX, CL_TRUE, 0, N*sizeof(float), R, 0, NULL, NULL );
   CL_ASSERT("clEnqueueReadBuffer", clErr);
 
   // compare result CPU & GPU
-  double sum = 0;
+  float sum = 0;
   for(int i=0; i<N; ++i){
     sum += std::fabs( R[i] - X[i] );
   }

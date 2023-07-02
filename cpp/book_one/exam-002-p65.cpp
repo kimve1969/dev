@@ -24,6 +24,7 @@
   RAM 6144 Mb, LPDDR4 / 128 Gb
 
   See CPU flags intrinsics in Linux: cat /proc/cpuinfo
+  Help of intrinsics: https://www.laruence.com/sse/
 */
 
 int main(int argc, char* argv[]){
@@ -60,8 +61,16 @@ int main(int argc, char* argv[]){
     std::cout<<"2. (SIMD 128 bit) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
   }
 
+  {
+    __m128d aa = _mm_set_pd(1.0, 1.0);
+    __m128d bb = _mm_set_pd(1.0, 1.0);
+    __m128d cc = _mm_set_pd(1.0, 1.0);
+    __m128d dd = _mm_fmadd_pd(aa, bb, cc);
+  }
   // CPU flags: AVX
   // __set256_set_pd(double e3, double e2, double e1, double e0)
+  // CPU not support AVX
+  /*
     result = 0;
   {
     __m256d result_tmp  = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
@@ -79,6 +88,7 @@ int main(int argc, char* argv[]){
     t = omp_get_wtime()-t;
     std::cout<<"2. (SIMD 256 bit) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
   }
+  */
   
   return 0;
 }
