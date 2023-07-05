@@ -34,7 +34,14 @@ int main(int argc, char* argv[]){
   const cl_int devID = 0;
   
   /*
-  see platform on your computer on Linux: clinfo
+  Notebook Lenovo                                                                                                                                                                                                 
+  CPU Intel(R) Core(TM) i5-1035G1 CPU @ 1.00GHz   3.6 GHz (Turbo) = 0,28 ns/cicle                                                                                                                                 
+  Skylake (client) - Microarchitectures - Intel                                                                                                                                                                   
+     https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(client)#Pipeline
+  GPU   Intel UHD Graphics (Ice Lake G1)
+  execute bloks 64, quantity shreiders A512, quantity of monitors 3
+
+  SEE platform on your computer on Linux: clinfo
   example on my noteebok Lenovo:
 
   Platform Name                                   Portable Computing Language

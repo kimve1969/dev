@@ -3,6 +3,7 @@
 
 int main(int argc, char* argv[]){
   // see in linux: cat /proc/cpuinfo
+  std::cout<<std::boolalpha;
   std::cout<<"sse: "<<__builtin_cpu_supports("sse")<<std::endl;
   std::cout<<"sse2: "<<__builtin_cpu_supports("sse2")<<std::endl;
   std::cout<<"avx: "<<__builtin_cpu_supports("avx")<<std::endl;

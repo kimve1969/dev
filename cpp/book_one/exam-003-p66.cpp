@@ -49,7 +49,7 @@ int main(int argc, char* argv[]){
   {
     for(int i=0; i<N; ++i) x[i]=i%2, y[i]=i%3;
     t = omp_get_wtime();
-
+    
     int N4=(N/4)*4;
     for(int i=0; i<N4; ++i){
       x[i] += y[i]; // unrolling loop
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]){
     for(int i=N4; i<N; ++i) x[i] += y[i];
           
     t = omp_get_wtime()-t;
-    std::cout<<"4. result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
+    std::cout<<"4. (4 UNROLL) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
   }
 
   result = 0.0;
@@ -70,6 +70,7 @@ int main(int argc, char* argv[]){
     t = omp_get_wtime();
 
     int N4=(N/4)*4;
+    
     #pragma omp parallel for num_threads(2)
     for(int i=0; i<N4; ++i){
       x[i] += y[i]; // unrolling loop
@@ -81,7 +82,7 @@ int main(int argc, char* argv[]){
     for(int i=N4; i<N; ++i) x[i] += y[i];
           
     t = omp_get_wtime()-t;
-    std::cout<<"4. (2 threads) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
+    std::cout<<"4. (2 THREADS) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
   }
 
   {
@@ -101,10 +102,10 @@ int main(int argc, char* argv[]){
 
     int N4=(N/4)*4;
     for(int i=0; i<N4; ++i){
-      x[i] += y[i]; // unrolling loop
-      x[i+1] += y[i+1];
-      x[i+2] += y[i+2];
-      x[i+3] += y[i+3];
+      x[i] += sin(y[i]); // unrolling loop
+      x[i+1] += sin(y[i+1]);
+      x[i+2] += sin(y[i+2]);
+      x[i+3] += sin(y[i+3]);
     }
       
     for(int i=N4; i<N; ++i) x[i] += sin(y[i]);
