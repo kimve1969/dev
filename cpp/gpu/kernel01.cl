@@ -6,16 +6,8 @@ __kernel void knlAXPBY(int n, __global float *x, __global float *y, float a, flo
 	 const int gid = get_global_id(0);
 	 const int lid = get_local_id(0);
 	 const int group_id = get_group_id(0);
-	 printf("global id = %d, group id = %d, local id =%d \n", gid, group_id, lid); 
+	 printf("gid = %d, group id = %d, lid =%d, ", gid, group_id, lid); 
 	 if( gid >=n ) return;
-	 __private double l = 1.2;
-	 printf("a=%d\n", x);
-	 
-	 // printf("x[0] = %f\n", x[0]);
-	 //printf("x[%d] = %f\n", gid, x[gid]);
-	 //double myvar = x[gid] + y[gid];
-	 //printf("myvar = %f\n", myvar);
-	 //x[gid] = a*x[gid] + b*y[gid];
-	 //x[gid]=x[gid] + y[gid];
+	 printf("a*x[%d] + b*y[%d] = %5.2f * %5.2f + %5.2f * %5.2f = %5.2f\n",gid, gid, a, x[gid], b, y[gid], x[gid] = a*x[gid] + b*y[gid]);
 }
  
