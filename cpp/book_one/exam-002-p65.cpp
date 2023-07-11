@@ -2,11 +2,11 @@
 #include<iomanip>
 #include<omp.h>
 
-//#ifdef __intel__
-#include<emmintrin.h> // __m128d
-//#endif
+#ifdef __x86_64__ // Intel x86
+  #include<emmintrin.h> // __m128d
+#endif 
 
-#ifdef __arm__
+#ifdef __aarch64__
    #include<arm_neon.h> // under ARM CPU
 #endif
 /*
@@ -17,10 +17,19 @@
   Help of intrinsics: https://www.laruence.com/sse/
 */
 
-int main(int argc, char* argv[]){
-  int N=330'000'123;
+#ifdef __GNUC__
+#define ALIGN(N) __attribute__((aligned(N))) // Linux
+#else
+#define ALIGN(N) __declspec(align(N)) // Windows
+#endif
 
-  double a = 1.0, result = 0.0, t1 = 0.0, t2 = 0.0;
+int main(int argc, char* argv[]){
+  ALIGN(64) int N=330'000'123;
+
+  ALIGN(64) double a = 1.0;
+  ALIGN(64) double result = 0.0;
+  ALIGN(64) double t1 = 0.0;
+  ALIGN(64) double t2 = 0.0;
 
   { 
     t1 = omp_get_wtime();
@@ -35,8 +44,8 @@ int main(int argc, char* argv[]){
   {
     // CPU flags: SSE2
     // __mm_set_pd(double e1, double e0)
-    __m128d result_tmp  = _mm_set_pd(0.0, 0.0);
-    __m128d aa = _mm_set_pd(a,a);
+    ALIGN(64) __m128d result_tmp  = _mm_set_pd(0.0, 0.0);
+    ALIGN(64) __m128d aa = _mm_set_pd(a,a);
     
     t2 = omp_get_wtime();
     

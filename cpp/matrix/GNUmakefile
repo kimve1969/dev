@@ -1,4 +1,7 @@
-#
+01:
+	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17 `pkg-config blaspp --cflags --libs`
+	./matrix01
+	rm matrix01
 CXX = g++
 CXXFLAGS = -lstdc++
 OBJS = matrix.o
@@ -19,4 +22,5 @@ run:
 clean:
 	rm *.o
 	ls -l
+
 

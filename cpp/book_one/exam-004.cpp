@@ -3,25 +3,7 @@
 #include<omp.h>
 #include<string>
 /*
-  example from video youtube - define size of cahce L1, L2 and L3
-
-  Character of processor of my Samsung Galaxy Tab S7, SM-T875
-  processor Qualcomm Snapdragon 865 Plus, 8 core:
-     1 core - ARM Cortex-A77 2.84 GHz, 3 core - ARM Cortex-A77 2.42 GHz, 4 core - ARM Cortex-A55 1.8 GHz
-  ARM Cortex-A77:
-     CPU 3.3 GHz, L1 128KB, L2 256-512KB, L3 1-4MB
-     Instruction set ARMv8-A, extention ARMv8.2A
-  ARM Cortex-A55: 
-     CPU 1.25-1.6 GHz, L1 32-128KB, L2 64-256 KB, L3 512KB-4MB
-
-  TEST (ARM):
-  L1 - 64KB, L2 - 256KB, L3 - 1MB 
-
-  Bound Width:
-  L1 - 15.8 GB/s, L2 - 4 GB/s, L3 - 2 GB/s
-  L1/L2 = 4, L1/L3 = 8
-  L2/L3 = 2
-  
+  example from video youtube - define size of cahce L1, L2 and L3  
 */
 
 #ifdef __GNUC__

@@ -3,18 +3,6 @@
 #include<omp.h>
 /*
   see page 61 of book
-
-  Character of processor of my notebook Lenovo is: 
-  proccessor Intel Core i5 frequance is 1.19 GHz, Turbo mode is 3.6 GHz (4 core)
-  TPP (Theoretical pick perfomance) = D (number of bytes) * F (frequance) = 1 bytes * 1.19E9 Hz = 1.19 GFLOPS
-  This example perfomance = 0.38 GFLOPS, only 32% from TPP!
-  K = 24, perfomance = 12.8 GFLOPS
-
-  Character of processor of my Samsung Galaxy Tab S7, SM-T875
-  processor Qualcomm Snapdragon 865 Plus, 8 core, 3.1 GHz (1 core - 2.84 GHz, 3 core - 2.42 GHz, 4 core - 1.8 GHz)
-  TPP (for 1.8 GHz) = 1.8 GFLOPS
-  RAM 6144 Mb, LPDDR4 2750 MHz, BW =   44 Gb/s or 5,5 GB/s
-  L1 - 512 Kb, L2 - 1 Mb, L3 - 4 Mb
 */
 
 #ifdef __GNUC__
@@ -76,31 +64,15 @@ int main(int argc, char* argv[]){
   std::cout<<"*********************** ADD optimization using unrolling loop *************************\n";
   
   tadd<1>();
-  tadd<2>();
-  tadd<4>();
   tadd<8>();
-  tadd<16>();
-  tadd<32>();
-  tadd<48>();
-  tadd<54>();
-  tadd<58>();
   tadd<64>();
-  tadd<128>();
   tadd<256>();
   
-  std::cout<<"*********************** MULT optimization using unrolling loop *****************************\n";
+  std::cout<<"*********************** MULT optimization using unrolling loop ************************\n";
 
   tmul<1>();
-  tmul<2>();
-  tmul<4>();
   tmul<8>();
-  tmul<16>();
-  tmul<32>();
-  tmul<48>();
-  tmul<54>();
-  tmul<58>();
   tmul<64>();
-  tmul<128>();
   tmul<256>();
   
   return 0;

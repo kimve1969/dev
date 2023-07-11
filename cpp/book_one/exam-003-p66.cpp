@@ -4,24 +4,11 @@
 #include<cmath>
 /*
   see page 66 of book
-  
-  Character of processor of my Samsung Galaxy Tab S7, SM-T875
-  processor Qualcomm Snapdragon 865 Plus, 8 core:
-     1 core - ARM Cortex-A77 2.84 GHz, 3 core - ARM Cortex-A77 2.42 GHz, 4 core - ARM Cortex-A55 1.8 GHz
-  ARM Cortex-A77:
-     CPU 3.3 GHz, L1 128KB, L2 256-512KB, L3 1-4MB
-     Instruction set ARMv8-A, extention ARMv8.2A
-  ARM Cortex-A55: 
-     CPU 1.25-1.6 GHz, L1 32-128KB, L2 64-256 KB, L3 512KB-4MB 
-     Instruction set ARMv8.2A
-  RAM 6144 Mb, LPDDR4, Band Width = 25,6 GB/s
-  L1 - 512 Kb, L2 - 1 Mb, L3 - 4 Mb
-
 */
 
 int main(int argc, char* argv[]){
 
-  std::cout<<"*********************** memory bound  *************************\n";
+  std::cout<<"*********************** band width  *************************\n";
   
   int N=66'000'123;
   double *x=new double[N], *y=new double[N];
@@ -82,7 +69,7 @@ int main(int argc, char* argv[]){
     for(int i=N4; i<N; ++i) x[i] += y[i];
           
     t = omp_get_wtime()-t;
-    std::cout<<"4. (2 THREADS) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n";
+    std::cout<<"4+2. (4 UNROOL + 2 THREADS) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GFLOPS: "<<N/(t*1E9)<<"\n\n";
   }
 
   {
@@ -111,7 +98,7 @@ int main(int argc, char* argv[]){
     for(int i=N4; i<N; ++i) x[i] += sin(y[i]);
           
     t = omp_get_wtime()-t;
-    std::cout<<"4. sin(y) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GSINS: "<<N/(t*1E9)<<"\n";
+    std::cout<<"4. (4 UNROLL) sin(y) result: "<<std::setprecision(13)<<result<<std::setprecision(3)<<", time: "<<t<<" s, GSINS: "<<N/(t*1E9)<<"\n";
   }
   
   return 0;
