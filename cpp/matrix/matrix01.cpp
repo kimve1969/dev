@@ -3,7 +3,13 @@
 #include<cstdlib>
 #include<ctime>
 #include<cmath>
-#include<blas.hh>
+
+auto t_now(){ return std::chrono::high_resolution_clock::now(); }
+auto t_diff(const std::chrono::time_point<std::chrono::high_resolution_clock> &start,
+	    const std::chrono::time_point<std::chrono::high_resolution_clock> &end){
+  std::chrono::duration<double> diff = end - start;
+  return diff.count();
+}
 
 int main(int argc, char** argv){
   std::cout<<"Start.\n";
@@ -20,7 +26,7 @@ int main(int argc, char** argv){
       A[i][j] = std::sin(i*L+j);
     }
   }
-
+  
   for(int i=0; i<M; ++i){
     for(int j=0; j<N; ++j){
       B[i][j] = std::sin(i*M+j);
@@ -29,8 +35,7 @@ int main(int argc, char** argv){
 
   auto norm = [&C](){
     double res{0};
-
-    for(int i=0; i<L; ++i)
+    for(int i=0; i<M; ++i)
       for(int k=0; k<N; ++k)
 	res += C[i][k];
 	
@@ -45,81 +50,69 @@ int main(int argc, char** argv){
 
   //**************************************
   zero();
-  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t = t_now();
   
   for(int i=0; i<L; ++i)
     for(int j=0; j<M; ++j)
       for(int k=0; k<N; ++k)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> t3 = t2-t1;
-  std::cout<<"(L,M,N) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(L,M,N) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
   
   for(int i=0; i<L; ++i)
     for(int k=0; k<N; ++k)
       for(int j=0; j<M; ++j)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(L,N,M) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(L,N,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
 
   for(int j=0; j<M; ++j)
     for(int i=0; i<L; ++i)
       for(int k=0; k<N; ++k)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(M,L,N) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(M,L,N) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
 
   for(int j=0; j<M; ++j)
     for(int k=0; k<N; ++k)
       for(int i=0; i<L; ++i)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(M,N,L) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(M,N,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
 
   for(int k=0; k<N; ++k)
     for(int j=0; j<M; ++j)
       for(int i=0; i<L; ++i)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(N,M,L) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(N,M,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
 
   for(int k=0; k<N; ++k)
     for(int i=0; i<L; ++i)
       for(int j=0; j<M; ++j)
 	C[i][k] += A[i][j]*B[j][k];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(N,L,M) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(N,L,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   // B[M][N] -> BT[N][M]
   auto BT = new double[N][M];
@@ -131,18 +124,17 @@ int main(int argc, char** argv){
   //***************************************
   std::cout<<"rotate matrix B"<<std::endl;
   zero();
-  t1 = std::chrono::high_resolution_clock::now();
+  t = t_now();
   
   for(int i=0; i<L; ++i)
     for(int k=0; k<N; ++k)
       for(int j=0; j<M; ++j)
 	C[i][k] += A[i][j]*BT[k][j];
 	
-  t2 = std::chrono::high_resolution_clock::now();
-  t3 = t2-t1;
-  std::cout<<"(L,N,M) t = "<<t3.count()<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(L,N,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
   
   std::cout<<"End prorgam.\n";
+  
   return 0;
 
 }

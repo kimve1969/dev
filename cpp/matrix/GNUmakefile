@@ -1,12 +1,12 @@
-01:
-	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17 `pkg-config blaspp --cflags --libs`
+1:
+	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17 -fopenmp
 	./matrix01
 	rm matrix01
 CXX = g++
 CXXFLAGS = -lstdc++
 OBJS = matrix.o
 RUN = matrix
-2:
+02:
 	g++ arr.cpp -o arr -lstdc++ -std=c++17
 	./arr
 	rm arr
