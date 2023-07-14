@@ -1,12 +1,5 @@
 // my token
-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	02/04/2023
-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	25/04/2023
-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
-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
-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
-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
-
-
+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	14/07/2023
 
 // set user and mail
 git config --global user.name=kimve1969
