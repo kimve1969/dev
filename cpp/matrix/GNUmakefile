@@ -1,5 +1,5 @@
 1:
-	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17 -fopenmp
+	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17
 	./matrix01
 	rm matrix01
 CXX = g++

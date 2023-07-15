@@ -13,125 +13,128 @@ auto t_diff(const std::chrono::time_point<std::chrono::high_resolution_clock> &s
 
 int main(int argc, char** argv){
   std::cout<<"Start.\n";
+
+  std::cout<<"|A|*|B|=|C|, C[k,m] = SUM( A[k,l]*B[l,m])\n";
   
-  const int L{1000}, M{1000}, N{1000};
-  auto A = new double[L][M];
-  auto B = new double[M][N];
-  auto C = new double[L][N];
+  const int K{1000}, L{1000}, M{1000};
+  auto A = new double[K][L];
+  auto B = new double[L][M];
+  auto C = new double[K][M];
     
   std::srand(std::time(nullptr));
 
-  for(int i=0; i<L; ++i){
-    for(int j=0; j<M; ++j){
-      A[i][j] = std::sin(i*L+j);
+  for(int k=0; k<K; ++k){
+    for(int l=0; l<L; ++l){
+      A[k][l] = std::sin(k*K+l);
     }
   }
   
-  for(int i=0; i<M; ++i){
-    for(int j=0; j<N; ++j){
-      B[i][j] = std::sin(i*M+j);
+  for(int l=0; l<L; ++l){
+    for(int m=0; m<M; ++m){
+      B[l][m] = std::sin(l*L+m);
     }
   }
 
   auto norm = [&C](){
     double res{0};
-    for(int i=0; i<M; ++i)
-      for(int k=0; k<N; ++k)
+    for(int i=0; i<L; ++i)
+      for(int k=0; k<M; ++k)
 	res += C[i][k];
 	
     return res;
   };
 
   auto zero = [&C](){
-    for(int i=0; i<L; ++i)
-      for(int k=0; k<N; ++k)
-	C[i][k] = 0;
+    for(int k=0; k<K; ++k)
+      for(int m=0; m<M; ++m)
+	C[k][m] = 0;
   };
 
   //**************************************
   zero();
   auto t = t_now();
   
-  for(int i=0; i<L; ++i)
-    for(int j=0; j<M; ++j)
-      for(int k=0; k<N; ++k)
-	C[i][k] += A[i][j]*B[j][k];
+  for(int k=0; k<K; ++k)
+    for(int l=0; l<L; ++l)
+      for(int m=0; m<M; ++m)
+	C[k][m] += A[k][l]*B[l][m];
 	
-  std::cout<<"(L,M,N) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(K,L,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
   t = t_now();
   
-  for(int i=0; i<L; ++i)
-    for(int k=0; k<N; ++k)
-      for(int j=0; j<M; ++j)
-	C[i][k] += A[i][j]*B[j][k];
+  for(int k=0; k<K; ++k)
+    for(int m=0; m<M; ++m)
+      for(int l=0; l<L; ++l)
+	C[k][m] += A[k][l]*B[l][m];
 	
-  std::cout<<"(L,N,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"(K,M,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
 
   //***************************************
   zero();
   t = t_now();
 
-  for(int j=0; j<M; ++j)
-    for(int i=0; i<L; ++i)
-      for(int k=0; k<N; ++k)
-	C[i][k] += A[i][j]*B[j][k];
-	
-  std::cout<<"(M,L,N) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
-
-  //***************************************
-  zero();
-  t = t_now();
-
-  for(int j=0; j<M; ++j)
-    for(int k=0; k<N; ++k)
-      for(int i=0; i<L; ++i)
-	C[i][k] += A[i][j]*B[j][k];
-	
-  std::cout<<"(M,N,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
-
-  //***************************************
-  zero();
-  t = t_now();
-
-  for(int k=0; k<N; ++k)
-    for(int j=0; j<M; ++j)
-      for(int i=0; i<L; ++i)
-	C[i][k] += A[i][j]*B[j][k];
-	
-  std::cout<<"(N,M,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
-
-  //***************************************
-  zero();
-  t = t_now();
-
-  for(int k=0; k<N; ++k)
-    for(int i=0; i<L; ++i)
-      for(int j=0; j<M; ++j)
-	C[i][k] += A[i][j]*B[j][k];
-	
-  std::cout<<"(N,L,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
-
-  // B[M][N] -> BT[N][M]
-  auto BT = new double[N][M];
   
-  for(int j=0; j<M; ++j)
-    for(int k=0; k<N; ++k)
-      BT[k][j] = B[j][k];
+  for(int l=0; l<L; ++l)
+    for(int k=0; k<K; ++k)
+      for(int m=0; m<M; ++m)
+	C[k][m] += A[k][l]*B[l][m];
+  	
+  std::cout<<"(L,K,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+
+  //***************************************
+  zero();
+  t = t_now();
+
+  for(int l=0; l<L; ++l)
+    for(int m=0; m<M; ++m)
+      for(int k=0; k<K; ++k)
+	C[k][m] += A[k][l]*B[l][m];
+  	
+  std::cout<<"(L,M,K) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+
+  //***************************************
+  zero();
+  t = t_now();
+
+  for(int m=0; m<M; ++m)
+    for(int k=0; k<K; ++k)
+      for(int l=0; l<L; ++l)
+	C[k][m] += A[k][l]*B[l][m];
+	
+  std::cout<<"(M,K,L) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+
+  //***************************************
+  zero();
+  t = t_now();
+
+  for(int m=0; m<M; ++m)
+    for(int l=0; l<L; ++l)
+      for(int k=0; k<K; ++k)
+	C[k][m] += A[k][l]*B[l][m];
+	
+  std::cout<<"(M,L,K) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+
+  // B[L][M] -> RB[M][L]
+  auto RB = new double[M][L];
+
+  for(int m=0; m<M; ++m)
+    for(int l=0; l<L; ++l)  
+      RB[m][l] = B[l][m];
   
   //***************************************
   std::cout<<"rotate matrix B"<<std::endl;
   zero();
   t = t_now();
-  
-  for(int i=0; i<L; ++i)
-    for(int k=0; k<N; ++k)
-      for(int j=0; j<M; ++j)
-	C[i][k] += A[i][j]*BT[k][j];
-	
-  std::cout<<"(L,N,M) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
+
+  for(int k=0; k<K; ++k)
+    for(int m=0; m<M; ++m)
+      for(int l=0; l<L; ++l)
+	C[k][m] += A[k][l]*RB[m][l];
+  	
+  std::cout<<"(K,M,L: A * rot B) t = "<<t_diff(t, t_now())<<", norm C = "<<norm()<<std::endl;
   
   std::cout<<"End prorgam.\n";
   
