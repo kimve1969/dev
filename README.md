@@ -1,5 +1,5 @@
 // my token
-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	14/07/2023
+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	15/07/2023
 
 // set user and mail
 git config --global user.name=kimve1969
