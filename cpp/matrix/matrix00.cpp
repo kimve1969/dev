@@ -11,8 +11,8 @@ auto t_diff(const std::chrono::time_point<std::chrono::high_resolution_clock> &s
 int main(int argc, char** argv){
   std::cout<<"Start.\n";
   
-  const int ROW=10'000'000, COL=100;
-  auto A = new char[ROW][COL];
+  const int ROW=1'000'000, COL=100;
+  auto A = new int[ROW][COL];
   std::cout<<"A["<<ROW<<"]["<<COL<<"]"<<std::endl;
   //--------------------------------------------------
   auto t = t_now();
