@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 
   std::cout<<"|A|*|B|=|C|, C[k,m] = SUM( A[k,l]*B[l,m])\n";
   
-  const int K{1000}, L{1000}, M{1000};
+  const int K{999}, L{999}, M{999};
   auto A = new double[K][L];
   auto B = new double[L][M];
   auto C = new double[K][M];
