@@ -3,6 +3,10 @@ build:
 	@make size_of_cash_line
 	@echo
 	@make optimize_loop
+	@echo
+	@make optimize_sub_matrix
+	@echo
+	@make optimize_sub_matrix_omp
 optimize_loop:
 	@echo "############ \033[31m  BEGIN EXAMPLE - OPTIMIZE LOOP \033[0m ####################################"
 	g++ matrix01.cpp -o matrix01 -lstdc++ -std=c++17
@@ -13,7 +17,15 @@ optimize_sub_matrix:
 	@echo "############ \033[31m  BEGIN EXAMPLE - OPTIMIZE SUB MATRIX \033[0m ##############################"
 	g++ matrix02.cpp -o matrix02 -lstdc++ -std=c++17
 	./matrix02
+#valgrind --tool=cachegrind --D1=1024,2,64 ./matrix02 #--D1=32768,2,64 --L2=524288,2,64
+#rm cachegrind.out.*
 	rm matrix02
+	@echo "############ \033[32m  END EXAMPLE \033[0m ######################################################"
+optimize_sub_matrix_omp:
+	@echo "####### \033[31m  BEGIN EXAMPLE - OPTIMIZE SUB MATRIX + OMP \033[0m #############################"
+	g++ matrix03.cpp -o matrix03 -lstdc++ -std=c++17 -fopenmp
+	./matrix03
+	rm matrix03
 	@echo "############ \033[32m  END EXAMPLE \033[0m ######################################################"
 size_of_cash_line:
 # Result of test:

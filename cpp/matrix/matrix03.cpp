@@ -3,6 +3,7 @@
 #include<cstdlib>
 #include<ctime>
 #include<cmath>
+#include<omp.h>
 
 auto t_now(){ return std::chrono::high_resolution_clock::now(); }
 auto t_diff(const std::chrono::time_point<std::chrono::high_resolution_clock> &start,
@@ -106,6 +107,8 @@ int main(int argc, char** argv){
   t = t_now();
 
   // C[k;m] = SUM( A[k;l]*B[l;m] )
+  #pragma omp parallel for num_threads(4)
+  //#pragma omp critical
   for(int k = 0; k < P; ++k)
     for(int m = 0; m < P; ++m)
       for(int l = 0; l < P; ++l)
