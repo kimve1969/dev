@@ -1,9 +1,8 @@
 #include<iostream>
 #include<chrono>
-#include<cstdlib>
-#include<ctime>
 #include<cmath>
 #include<omp.h>
+#include<string>
 
 auto t_now(){ return std::chrono::high_resolution_clock::now(); }
 auto t_diff(const std::chrono::time_point<std::chrono::high_resolution_clock> &start,
@@ -92,23 +91,41 @@ int main(int argc, char** argv){
 	C[k][m] += A[k][l]*B[l][m];
  
   auto tsec1 = t_diff(t, t_now());
-  std::cout<<"(K,L,M) t1 = "<<tsec1<<", norm C = "<<norm()<<std::endl;
+  std::cout<<"1. (no omp matrix multiple row * col) t = "<<tsec1<<", norm C = "<<norm()<<std::endl;
 
-  //***************************************
+  //**************************************
+  if(argc<2){
+    std::cout<<"You should run with argument is number threads!\n";
+    return -1;
+  }
+  int OMP_NUM_THREAD = std::stoi(argv[1]);
+  //**************************************
   
+  zero();
+  t = t_now();
+
+  #pragma omp parallel for num_threads(OMP_NUM_THREAD)
+  for(int k=0; k<K; ++k)
+    for(int l=0; l<L; ++l)
+      for(int m=0; m<M; ++m)
+	C[k][m] += A[k][l]*B[l][m];
+ 
+  auto tsec2 = t_diff(t, t_now());
+  std::cout<<"2. (omp threads "<<OMP_NUM_THREAD<<", matrix multiple row * col) t = "<<tsec2<<", norm C = "<<norm()<<", t1/t2 = "<<tsec1/tsec2<<std::endl;
+  //***************************************
+  // lambda not use becouse it add overhead !!!
   auto ABpC = [&A, &B, &C, &N](int ra, int ca, int rb, int cb, int rc, int cc){
 		    for(int k=0; k<N; ++k)
 		      for(int m=0; m<N; ++m)
 			for(int l=0; l<N; ++l)
 			  C[rc*N + k][cc*N + m] += A[ra*N + k][ca*N + l]*B[rb*N + l][cb*N + m];
   		  };
-  
+  //***************************************
+
   zero();
   t = t_now();
 
   // C[k;m] = SUM( A[k;l]*B[l;m] )
-  #pragma omp parallel for num_threads(4)
-  //#pragma omp critical
   for(int k = 0; k < P; ++k)
     for(int m = 0; m < P; ++m)
       for(int l = 0; l < P; ++l)
@@ -120,9 +137,30 @@ int main(int argc, char** argv){
 	      //calculate index C,A,B matrixs add overhead about 100% common time!!!
 	      C[k*N + kk][m*N + mm] += A[k*N + kk][l*N + ll]*B[l*N + ll][m*N + mm];
 
-  auto tsec2 = t_diff(t, t_now());
-  std::cout<<"(block matrix multiplier) t2 = "<<tsec2<<", norm C = "<<norm()<<", t2/t1 = "<<tsec2/tsec1<<std::endl;
+  auto tsec3 = t_diff(t, t_now());
+  std::cout<<"3. (no omp block matrix multiple) t = "<<tsec3<<", norm C = "<<norm()<<std::endl;
+ 
+  //***************************************
   
+  zero();
+  t = t_now();
+
+  // C[k;m] = SUM( A[k;l]*B[l;m] )
+  #pragma omp parallel for num_threads(OMP_NUM_THREAD)
+  for(int k = 0; k < P; ++k)
+    for(int m = 0; m < P; ++m)
+      for(int l = 0; l < P; ++l)
+	//ABpC(k, l /* A[k;l] */, l, m /* B[l;m] */, k, m /* C[k;m] */);
+	//call ABpC() P^3 times add overheads about 10% common time
+	for(int kk=0; kk<N; ++kk)
+	  for(int mm=0; mm<N; ++mm)
+	    for(int ll=0; ll<N; ++ll)
+	      //calculate index C,A,B matrixs add overhead about 100% common time!!!
+	      C[k*N + kk][m*N + mm] += A[k*N + kk][l*N + ll]*B[l*N + ll][m*N + mm];
+
+  auto tsec4 = t_diff(t, t_now());
+  std::cout<<"4. (omp threads "<<OMP_NUM_THREAD<<", block matrix multiple) t = "<<tsec4<<", norm C = "<<norm()<<", t3/t4 = "<<tsec3/tsec4<<std::endl;
+ 
   //***************************************
   std::cout<<"End prorgam.\n";
   

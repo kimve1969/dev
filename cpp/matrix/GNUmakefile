@@ -24,7 +24,11 @@ optimize_sub_matrix:
 optimize_sub_matrix_omp:
 	@echo "####### \033[31m  BEGIN EXAMPLE - OPTIMIZE SUB MATRIX + OMP \033[0m #############################"
 	g++ matrix03.cpp -o matrix03 -lstdc++ -std=c++17 -fopenmp
-	./matrix03
+	./matrix03 3 #parameters 1 is number threads
+	./matrix03 4
+	./matrix03 6
+	./matrix03 8
+	./matrix03 12
 	rm matrix03
 	@echo "############ \033[32m  END EXAMPLE \033[0m ######################################################"
 size_of_cash_line:
