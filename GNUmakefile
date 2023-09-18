@@ -14,23 +14,33 @@ help:
 	@echo "You are su or sudo for install"
 install:
 #1. Install common tools
-	apt update
-	apt install vim
-	apt install man
-	apt install emacs
-	apt install build-essential # GNU gcc
-	apt install clang	# clang
-	apt install openmpi-bin # open mpi
-	apt install slurm	# slurm
-	apt install valgrind	# valgring [--tool=memcheck | --tool=cache]
-	apt install gdb		# GNU debuger
-	apt install pkg-config
+	sudo apt update
+	sudo apt install vim
+	sudo apt install man
+	sudo apt install emacs
+	sudo apt install build-essential # GNU gcc
+	sudo apt install clang	# clang
+	sudo apt install openmpi-bin # open mpi
+	sudo apt install slurm	# slurm
+	sudo apt install valgrind	# valgring [--tool=memcheck | --tool=cache]
+	sudo apt install gdb		# GNU debuger
+	sudo apt install pkg-config
 	apt install intel-opencl-icd	# install "Intel Gen OCL Driver" platform 
 	apt install beignet-opencl-icd # install "Clover" platform
 	apt install pocl-opencl-icd	# install "Portable Computing Language" platform
 	apt install ocl-icd-libopencl1 #
 	apt install clinfo	# utilite open CL, you can see platforn run clinfo
 	apt install ocl-icd-opencl-dev	# open CL, see headers files in /usr/include/CL
+
+#install cuda toolkit for debian 11, see https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+#check
+	wget https://developer.download.nvidia.com/compute/cuda/repos/debian11/x86_64/cuda-keyring_1.1-1_all.deb
+	sudo dpkg -i cuda-keyring_1.1-1_all.deb
+	sudo add-apt-repository contrib
+	sudo apt-get update
+	sudo apt-get -y install cuda
+
+
 	apt install python3
 	rm -f python			# delete sybmol link 
 	ln -s /usr/bin/python3 /usr/bin/python	# create symbol link to python3
