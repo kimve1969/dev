@@ -1,6 +1,6 @@
 .PHONY: 01 02 03 04 05 06
 07:
-	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -fopenmp -O3
+	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp -O3
 	#./cpu06 4 mul print 1
 06:
 	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp -O3

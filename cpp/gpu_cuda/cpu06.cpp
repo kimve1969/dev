@@ -11,6 +11,7 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<stdexcept>
 #include<omp.h>
 #include<thread>
+#include<cmath>
 
 enum oper_t
 {
@@ -24,13 +25,15 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-void Asub_mul_Bsub( double** A, double** B, double** C, int N )
+void Asub_mul_Bsub( double** A, double** B, double** C, int row_max, int col_max )
 {
-	for(int i=0; i<N; ++i)
+	int row_col_max = row_max < col_max ? row_max : col_max;
+
+	for(int i=0; i<row_max ; ++i)
 	{
-		for(int j=0; j<N; ++j)
+		for(int j=0; j<col_max ; ++j)
 		{
-			for(int k=0; k<N; ++k)
+			for(int k=0; k<row_col_max ; ++k)
 			{
 				C[i][j] += A[i][k] * B[k][j];
 			}
@@ -54,42 +57,72 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
         if(op == MUL)
         {
 		// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 bytes
-		int dimBlock = 36;
-		int dimGrid = N / dimBlock;
-		int numThreads = dimGrid * dimGrid;
+		const int CNST_SIZE_OF_BLOCK = 36;
 
-		double **Asub = new double*[dimBlock]; 
-		double **Bsub = new double*[dimBlock];
-	       	double **Csub = new double*[dimBlock];
+		int dimBlock = N < CNST_SIZE_OF_BLOCK ? N : CNST_SIZE_OF_BLOCK;
+		int dimGrid = N / dimBlock + ( N % dimBlock ? 1 : 0 );
 
+		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
 		for( int I = 0; I < dimGrid; ++I )
 		{
+			#pragma omp private(Asub, Bsub, Csub, row_max, col_max)
 			for( int J = 0; J < dimGrid; ++J  )
 			{
+				double **Asub = new double*[dimBlock]; 
+				double **Bsub = new double*[dimBlock];
+	       			double **Csub = new double*[dimBlock];
+
+				/*
+		 		 See above Asub_mul_Bsub
+		 								     col max |
+											     V
+		
+				| 1 1 1 |					| 1 1 |  | 1 X |
+				| 1 1 1 | if dimBlock = 2, we have 4 sub-matrix | 1 1 |  | 1 X |
+				| 1 1 1 |
+										| 1 1 |	 | 1 X |
+								row max -->	| X X |	 | X X |
+		 					
+				Asub[N-1, J] 	limited row_max
+				Bsub[I, N-1] 	limited col_max
+				Csub[N-1, N-1] 	limited row_max & col_max
+
+				Example: row_max = 37%36 = 1 => see Asub_mul_Bsub(..., row_max) => for(int i=0; i<row_max; ++i) 
+				*/
+
+				int row_max = (N % CNST_SIZE_OF_BLOCK) && (I == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock;
+				int col_max = (N % CNST_SIZE_OF_BLOCK) && (J == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock;
+
 				// Rebuild Csub-array of pointers to rows C-array
-				for(int row = 0; row < dimBlock; ++row )
+				for(int row = 0; row < row_max; ++row )
 				{
 					Csub[ row ] = &C[ I * dimBlock + row ][ J * dimBlock ];
 				}
 
-				//#pragma omp parallel for num_threads( num_omp_threads )
+				// Calculate Csub[I][J]
 				for( int K = 0; K < dimGrid; ++K )
 				{
 					// Rebuild Asub, Bsub arrays of pointers to rows A,B
-					for(int row = 0; row < dimBlock; ++row )
+					for(int row = 0; row < row_max; ++row )
 					{
 						Asub[ row ] = &A[ I * dimBlock + row ][ K * dimBlock ];  
+					}
+
+					for(int row = 0; row < dimBlock; ++row )
+					{
 						Bsub[ row ] = &B[ K * dimBlock + row ][ J * dimBlock ];
 					}
-					//Csub[I][J] = Asub[I][K] * Bsub[K][J];
-					Asub_mul_Bsub( Asub, Bsub, Csub, dimBlock );
+					
+					// Csub[I][J] = Asub[I][K] * Bsub[K][J];
+					Asub_mul_Bsub( Asub, Bsub, Csub,  row_max, col_max);
 				}
+
+				delete[] Asub;
+				delete[] Bsub;
+				delete[] Csub;
 			}
 		}
 
-		delete[] Asub;
-		delete[] Bsub;
-		delete[] Csub;
 	}
 }
 
