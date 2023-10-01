@@ -2,7 +2,7 @@
 Copyright:      "Surgutneftegas" PJSC
 Autors:         Created by Kim V.E. 2023/09/06
 Target:         For education
-		bases on cpu05.cpp + optimization by used sub-matrixes multiplier
+		used optimization cpu06.cpp + ALIGN(64) + unrooling loop
 Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 
 *************************************************************************/
@@ -13,6 +13,12 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<omp.h>
 #include<thread>
 #include<cmath>
+
+#ifdef __GNUC__
+#define ALIGN(N) __attribute__((aligned(N))) // Linux
+#else
+#define ALIGN(N) __declspec(align(N)) // Windows
+#endif
 
 enum oper_t
 {
@@ -32,12 +38,20 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 	{
 		for(int j=0; j < col_max_C ; ++j)
 		{
-			double sum = 0;
-			for(int k=0; k < rc_max_AB ; ++k)
+			//double sum = 0;
+			double sum[4]{0.0, 0.0, 0.0, 0.0};
+
+			for( int k=0; k < rc_max_AB ; /*++k*/k += 4 )
 			{
-				sum += A[i][k] * B[k][j];
+				sum[0] += A[i][k+0] * B[k+0][j];
+				sum[1] += A[i][k+1] * B[k+1][j];
+				sum[2] += A[i][k+2] * B[k+2][j];
+				sum[3] += A[i][k+3] * B[k+3][j];
+				//sum += A[i][k] * B[k][j];
 			}
-			C[i][j] += sum;
+
+			C[i][j] += sum[0] + sum[1] + sum[2] + sum[3];
+			//C[i][j] += sum;
 		}
 	}
 }
@@ -58,9 +72,9 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
         if(op == MUL)
         {
 		// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-		const int CNST_DIM_OF_BLOCK = 36;
+		const int CNST_SIZE_OF_BLOCK = 36;
 
-		int dimBlock = N < CNST_DIM_OF_BLOCK ? N : CNST_DIM_OF_BLOCK;
+		int dimBlock = N < CNST_SIZE_OF_BLOCK ? N : CNST_SIZE_OF_BLOCK;
 		int dimGrid = N / dimBlock + ( N % dimBlock ? 1 : 0 );
 
 		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
@@ -91,9 +105,9 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 				Example: row_max = 37%36 = 1 => see Asub_mul_Bsub(..., row_max) => for(int i=0; i<row_max; ++i) 
 				*/
 
-				auto rc_max = [&dimGrid, &dimBlock, &N, &CNST_DIM_OF_BLOCK](int Indx)
+				auto rc_max = [&dimGrid, &dimBlock, &N, &CNST_SIZE_OF_BLOCK](int Indx)
 				{
-					return (N % CNST_DIM_OF_BLOCK) && (Indx == (dimGrid - 1) ) ? (N % CNST_DIM_OF_BLOCK) : dimBlock; 
+					return (N % CNST_SIZE_OF_BLOCK) && (Indx == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock; 
 				};
 
 				int row_max_C = rc_max(I);
@@ -199,9 +213,9 @@ Example:\n"
         //      1-ый - высчитывать псеводо-индексы 2-х мерного массива
         //      2-ой - создать доплнительный массив указателей
         //      скорее всего 2-ой будет работать быстрее, т.к. исключаются вычисления псевдо-индексов
-        double* h_A = new double[nelements];
-        double* h_B = new double[nelements];
-        double* h_C = new double[nelements];
+        ALIGN(64) double* h_A = new double[nelements];
+        ALIGN(64) double* h_B = new double[nelements];
+        ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
                 h_A[i] = i*2.1;
@@ -209,9 +223,9 @@ Example:\n"
                 h_C[i] = 0.0;
         }
 
-        double** h_matrix_A = new double*[arg_N];
-        double** h_matrix_B = new double*[arg_N];
-        double** h_matrix_C = new double*[arg_N];
+        ALIGN(64) double** h_matrix_A = new double*[arg_N];
+        ALIGN(64) double** h_matrix_B = new double*[arg_N];
+        ALIGN(64) double** h_matrix_C = new double*[arg_N];
 
         for(int i=0; i<arg_N; ++i){
                 h_matrix_A[i] = &h_A[i*arg_N];

@@ -1,11 +1,14 @@
 .PHONY: 01 02 03 04 05 06
-07:
+06-1cpu:
+	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp -O3
+	./cpu06-1 4 mul print 1
+06cpu:
 	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp -O3
-	./cpu06 4 mul print 1
-06:
+	./cpu06 5 mul print 1
+05cpu:
 	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp -O3
 	./cpu05 5 mul print 1
-05:
+05gpu:
 	clear
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp
 	@echo '************************ MATRIX OPERATION ***********************'
