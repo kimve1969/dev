@@ -44,10 +44,12 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
                 {
                         for(int j=0; j<N; ++j)
                         {
+				double sum = 0;
                                 for(int k=0; k<N; ++k)
                                 {
-                                        C[i][j] += A[i][k] * B[k][j];
+                                        sum += A[i][k] * B[k][j];
                                 }
+				C[i][j] = sum;
                         }
                 }
         }

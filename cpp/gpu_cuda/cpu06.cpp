@@ -25,18 +25,18 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-void Asub_mul_Bsub( double** A, double** B, double** C, int row_max, int col_max )
+void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
-	int row_col_max = row_max < col_max ? row_max : col_max;
-
-	for(int i=0; i<row_max ; ++i)
+	for(int i=0; i < row_max_C ; ++i)
 	{
-		for(int j=0; j<col_max ; ++j)
+		for(int j=0; j < col_max_C ; ++j)
 		{
-			for(int k=0; k<row_col_max ; ++k)
+			double sum = 0;
+			for(int k=0; k < rc_max_AB ; ++k)
 			{
-				C[i][j] += A[i][k] * B[k][j];
+				sum += A[i][k] * B[k][j];
 			}
+			C[i][j] += sum;
 		}
 	}
 }
@@ -82,19 +82,24 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 				| 1 1 1 |
 										| 1 1 |	 | 1 X |
 								row max -->	| X X |	 | X X |
-		 					
-				Asub[N-1, J] 	limited row_max
-				Bsub[I, N-1] 	limited col_max
-				Csub[N-1, N-1] 	limited row_max & col_max
+		 		
+				Csub[N-1, N-1] 	limited C row_max & col_max
+				Asub[N-1, J] 	limited A row_max
+				Bsub[I, N-1] 	limited B col_max
 
 				Example: row_max = 37%36 = 1 => see Asub_mul_Bsub(..., row_max) => for(int i=0; i<row_max; ++i) 
 				*/
 
-				int row_max = (N % CNST_SIZE_OF_BLOCK) && (I == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock;
-				int col_max = (N % CNST_SIZE_OF_BLOCK) && (J == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock;
+				auto rc_max = [&dimGrid, &dimBlock, &N, &CNST_SIZE_OF_BLOCK](int Indx)
+				{
+					return (N % CNST_SIZE_OF_BLOCK) && (Indx == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock; 
+				};
+
+				int row_max_C = rc_max(I);
+				int col_max_C = rc_max(J);
 
 				// Rebuild Csub-array of pointers to rows C-array
-				for(int row = 0; row < row_max; ++row )
+				for(int row = 0; row < row_max_C ; ++row )
 				{
 					Csub[ row ] = &C[ I * dimBlock + row ][ J * dimBlock ];
 				}
@@ -102,8 +107,10 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 				// Calculate Csub[I][J]
 				for( int K = 0; K < dimGrid; ++K )
 				{
+					int rc_max_AB = rc_max(K);
+
 					// Rebuild Asub, Bsub arrays of pointers to rows A,B
-					for(int row = 0; row < row_max; ++row )
+					for(int row = 0; row < rc_max_AB ; ++row )
 					{
 						Asub[ row ] = &A[ I * dimBlock + row ][ K * dimBlock ];  
 					}
@@ -114,7 +121,7 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 					}
 					
 					// Csub[I][J] = Asub[I][K] * Bsub[K][J];
-					Asub_mul_Bsub( Asub, Bsub, Csub,  row_max, col_max);
+					Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
 				}
 
 				delete[] Asub;
