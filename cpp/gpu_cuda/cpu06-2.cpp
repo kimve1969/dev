@@ -53,7 +53,8 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 				// __128d _mm_set_pd( double e1, double e0 )
 				a2d = _mm_set_pd( (k+1 < rc_max_AB ? A[i][k+1] : 0) , (k+0 < rc_max_AB ? A[i][k+0] : 0) );
 				b2d = _mm_set_pd( (k+1 < rc_max_AB ? B[k+1][j] : 0) , (k+0 < rc_max_AB ? B[k+0][j] : 0) );
-				//c2d = _mm_add_pd( c2d,  _mm_mul_pd(a2d, b2d) );
+				// c2d = _mm_add_pd( c2d,  _mm_mul_pd(a2d, b2d) );
+				// FMA, gcc -mfma
 				c2d = _mm_fmadd_pd( a2d, b2d, c2d );
 			}
 
