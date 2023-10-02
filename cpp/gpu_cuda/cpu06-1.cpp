@@ -39,19 +39,25 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 		for(int j=0; j < col_max_C ; ++j)
 		{
 			//double sum = 0;
-			double sum[4]{0.0, 0.0, 0.0, 0.0};
+			const int PIPELINE = 4;
+			double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
+			double agregate{0};
 
-			for( int k=0; k < rc_max_AB ; /*++k*/k += 4 )
+			for( int k=0; k < rc_max_AB ; /*++k*/k += PIPELINE )
 			{
-				sum[0] += A[i][k+0] * B[k+0][j];
-				sum[1] += A[i][k+1] * B[k+1][j];
-				sum[2] += A[i][k+2] * B[k+2][j];
-				sum[3] += A[i][k+3] * B[k+3][j];
+				sum[0] += (k+0 < rc_max_AB) ? A[i][k+0] * B[k+0][j] : 0;
+				sum[1] += (k+1 < rc_max_AB) ? A[i][k+1] * B[k+1][j] : 0;
+				sum[2] += (k+2 < rc_max_AB) ? A[i][k+2] * B[k+2][j] : 0;
+				sum[3] += (k+3 < rc_max_AB) ? A[i][k+3] * B[k+3][j] : 0;
 				//sum += A[i][k] * B[k][j];
 			}
 
-			C[i][j] += sum[0] + sum[1] + sum[2] + sum[3];
+			for(int m=0; m < PIPELINE; ++m)
+			{
+				agregate += sum[m];
+			}
 			//C[i][j] += sum;
+			C[i][j] = agregate;
 		}
 	}
 }
@@ -77,16 +83,17 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 		int dimBlock = N < CNST_SIZE_OF_BLOCK ? N : CNST_SIZE_OF_BLOCK;
 		int dimGrid = N / dimBlock + ( N % dimBlock ? 1 : 0 );
 
-		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
+		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock) 		
 		for( int I = 0; I < dimGrid; ++I )
 		{
-			#pragma omp private(Asub, Bsub, Csub, row_max, col_max)
+			double **Asub = new double*[dimBlock]; 
+			double **Bsub = new double*[dimBlock];
+	       		double **Csub = new double*[dimBlock];
+			
+			#pragma omp private(Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB)
 			for( int J = 0; J < dimGrid; ++J  )
 			{
-				double **Asub = new double*[dimBlock]; 
-				double **Bsub = new double*[dimBlock];
-	       			double **Csub = new double*[dimBlock];
-
+				
 				/*
 		 		 See above Asub_mul_Bsub
 		 								     col max |
@@ -139,10 +146,12 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 					Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
 				}
 
-				delete[] Asub;
-				delete[] Bsub;
-				delete[] Csub;
 			}
+
+			delete[] Asub;
+			delete[] Bsub;
+			delete[] Csub;
+
 		}
 
 	}

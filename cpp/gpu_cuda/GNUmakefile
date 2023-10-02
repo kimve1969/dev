@@ -1,4 +1,20 @@
 .PHONY: 01 02 03 04 05 06
+build:
+	make 05cpu
+	make 06cpu
+	make 06-1cpu
+	@echo '************************************ cpu0x 1000 nopint *************************************************'
+	./cpu05 1000 mul noprint
+	@echo 'End ********************************'
+	./cpu06 1000 mul noprint
+	@echo 'End ********************************'
+	./cpu06-1 1000 mul noprint
+	@echo '************************************ cpu0x 3000 nopint 8 ***********************************************'
+	./cpu05 1000 mul noprint 8
+	@echo 'End ********************************'
+	./cpu06 1000 mul noprint 8
+	@echo 'End ********************************'
+	./cpu06-1 1000 mul noprint 8
 06-1cpu:
 	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp -O3
 	./cpu06-1 4 mul print 1
