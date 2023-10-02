@@ -14,10 +14,13 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<thread>
 #include<cmath>
 
+#include<emmintrin.h>
+#include<immintrin.h>
+
 #ifdef __GNUC__
-	#define ALIGN(N) __attribute__((aligned(N))) 	// Linux
+	#define ALIGN(N) __attribute__((aligned(N)))	// Linux
 #else
-	#define ALIGN(N) __declspec(align(N)) 		// Windows
+	#define ALIGN(N) __declspec(align(N))		// Windows
 #endif
 
 enum oper_t
@@ -38,26 +41,39 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 	{
 		for(int j=0; j < col_max_C ; ++j)
 		{
-			//double sum = 0;
-			const int PIPELINE = 4;
-			double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
-			double agregate{0};
-			
-			for( int k=0; k < rc_max_AB ; /*++k*/k += PIPELINE )
+			const int VECTOR_SIZE = 8;
+
+			// AVX512F, gcc -mafx512f
+			ALIGN(64) __m512d c8d = _mm512_set_pd(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+		       	ALIGN(64) __m512d a8d;
+			ALIGN(64) __m512d b8d;	
+
+			for( int k=0; k < rc_max_AB ; k += VECTOR_SIZE )
 			{
-				sum[0] += (k+0 < rc_max_AB) ? A[i][k+0] * B[k+0][j] : 0;
-				sum[1] += (k+1 < rc_max_AB) ? A[i][k+1] * B[k+1][j] : 0;
-				sum[2] += (k+2 < rc_max_AB) ? A[i][k+2] * B[k+2][j] : 0;
-				sum[3] += (k+3 < rc_max_AB) ? A[i][k+3] * B[k+3][j] : 0;
-				//sum += A[i][k] * B[k][j];
+				// __m512d _mm512_set_pd( double e7, double e6, ..., double e0 )
+				a8d = _mm512_set_pd( 	(k+7 < rc_max_AB ? A[i][k+7] : 0) , 
+							(k+6 < rc_max_AB ? A[i][k+6] : 0) , 
+							(k+5 < rc_max_AB ? A[i][k+5] : 0) , 
+							(k+4 < rc_max_AB ? A[i][k+4] : 0) , 
+							(k+3 < rc_max_AB ? A[i][k+3] : 0) , 
+							(k+2 < rc_max_AB ? A[i][k+2] : 0) , 
+							(k+1 < rc_max_AB ? A[i][k+1] : 0) , 
+							(k+0 < rc_max_AB ? A[i][k+0] : 0) );
+
+				b8d = _mm512_set_pd( 	(k+7 < rc_max_AB ? B[k+7][j] : 0) ,
+							(k+6 < rc_max_AB ? B[k+6][j] : 0) , 
+							(k+5 < rc_max_AB ? B[k+5][j] : 0) , 
+							(k+4 < rc_max_AB ? B[k+4][j] : 0) , 
+							(k+3 < rc_max_AB ? B[k+3][j] : 0) , 
+							(k+2 < rc_max_AB ? B[k+2][j] : 0) , 
+							(k+1 < rc_max_AB ? B[k+1][j] : 0) , 
+							(k+0 < rc_max_AB ? B[k+0][j] : 0) );
+				
+				c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
 			}
 
-			for(int m=0; m < PIPELINE; ++m)
-			{
-				agregate += sum[m];
-			}
-			//C[i][j] += sum;
-			C[i][j] += agregate;
+			C[i][j] += ((double*)(&c8d))[0] + ((double*)(&c8d))[1] + ((double*)(&c8d))[2]  +  ((double*)(&c8d))[3] + 
+				   ((double*)(&c8d))[4] +  ((double*)(&c8d))[5] +  ((double*)(&c8d))[6] +  ((double*)(&c8d))[7];
 		}
 	}
 }

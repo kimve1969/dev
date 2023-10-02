@@ -14,10 +14,13 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<thread>
 #include<cmath>
 
+#include<emmintrin.h>
+#include<immintrin.h>
+
 #ifdef __GNUC__
-	#define ALIGN(N) __attribute__((aligned(N))) 	// Linux
+	#define ALIGN(N) __attribute__((aligned(N)))	// Linux
 #else
-	#define ALIGN(N) __declspec(align(N)) 		// Windows
+	#define ALIGN(N) __declspec(align(N))		// Windows
 #endif
 
 enum oper_t
@@ -38,26 +41,23 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 	{
 		for(int j=0; j < col_max_C ; ++j)
 		{
-			//double sum = 0;
-			const int PIPELINE = 4;
-			double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
-			double agregate{0};
-			
-			for( int k=0; k < rc_max_AB ; /*++k*/k += PIPELINE )
+			const int VECTOR_SIZE = 2;
+
+			// SSE2
+			ALIGN(64) __m128d c2d = _mm_set_pd(0.0, 0.0);
+		       	ALIGN(64) __m128d a2d;
+			ALIGN(64) __m128d b2d;	
+
+			for( int k=0; k < rc_max_AB ; k += VECTOR_SIZE )
 			{
-				sum[0] += (k+0 < rc_max_AB) ? A[i][k+0] * B[k+0][j] : 0;
-				sum[1] += (k+1 < rc_max_AB) ? A[i][k+1] * B[k+1][j] : 0;
-				sum[2] += (k+2 < rc_max_AB) ? A[i][k+2] * B[k+2][j] : 0;
-				sum[3] += (k+3 < rc_max_AB) ? A[i][k+3] * B[k+3][j] : 0;
-				//sum += A[i][k] * B[k][j];
+				// __128d _mm_set_pd( double e1, double e0 )
+				a2d = _mm_set_pd( (k+1 < rc_max_AB ? A[i][k+1] : 0) , (k+0 < rc_max_AB ? A[i][k+0] : 0) );
+				b2d = _mm_set_pd( (k+1 < rc_max_AB ? B[k+1][j] : 0) , (k+0 < rc_max_AB ? B[k+0][j] : 0) );
+				//c2d = _mm_add_pd( c2d,  _mm_mul_pd(a2d, b2d) );
+				c2d = _mm_fmadd_pd( a2d, b2d, c2d );
 			}
 
-			for(int m=0; m < PIPELINE; ++m)
-			{
-				agregate += sum[m];
-			}
-			//C[i][j] += sum;
-			C[i][j] += agregate;
+			C[i][j] += ((double*)(&c2d))[0] + ((double*)(&c2d))[1];
 		}
 	}
 }

@@ -1,6 +1,19 @@
 .PHONY: 01 02 03 04 05 06
 build:
 	clear
+	rm -rf cpu06 cpu06-2 cpu06-3
+	make cpu06
+	make cpu06-2
+	make cpu06-3
+	@echo '************************************ cpu0x 1000 nopint *************************************************'
+	./cpu06 1000 mul noprint
+	@echo 'End ********************************'
+	./cpu06-2 1000 mul noprint
+	@echo 'End ********************************'
+	./cpu06-3 1000 mul noprint
+	@echo 'End ********************************'
+build2:
+	clear
 	rm cpu05 cpu06 cpu06-1
 	make cpu05
 	make cpu06
@@ -12,19 +25,25 @@ build:
 	@echo 'End ********************************'
 	./cpu06-1 1000 mul noprint
 	@echo '************************************ cpu0x 2000 nopint 8 ***********************************************'
-	./cpu05 1000 mul noprint 8
+	./cpu05 2000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06 1000 mul noprint 8
+	./cpu06 2000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-1 1000 mul noprint 8
+	./cpu06-1 2000 mul noprint 8
+cpu06-3:
+	gcc cpu06-3.cpp -o cpu06-3 -std=c++17 -lstdc++ -lm -fopenmp -mavx512f -O3 
+	./cpu06-3 5 mul print 1
+cpu06-2:
+	gcc cpu06-2.cpp -o cpu06-2 -std=c++17 -lstdc++ -lm -fopenmp -mfma -O3 
+	./cpu06-2 5 mul print 1
 cpu06-1:
-	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp 
+	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp -O3 
 	./cpu06-1 5 mul print 1
 cpu06:
-	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp 
+	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp -O3
 	./cpu06 5 mul print 1
 cpu05:
-	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp
+	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp -O3
 	./cpu05 5 mul print 1
 gpu05:
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp

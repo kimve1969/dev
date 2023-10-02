@@ -1,6 +1,8 @@
 cuda:
 	#run befor service Docker Desktop Windows and after run this docker:
 	docker run --rm -it -v /home/kimve/dev/cpp:/cpp -w /cpp/gpu_cuda kimve/cuda:12.2.0-devel-ubuntu22.04-vim /bin/bash
+gpu_cuda_01:
+	docker run --rm -v /home/kimve/dev/cpp:/cpp -w /cpp/gpu_cuda kimve/cuda:12.2.0-devel-ubuntu22.04-vim make 01
 commit_docker:
 	# You can change docker image (example install package in docker) and then commit TAG
 	# SEE CONTAINER ID and image = REPOSITORY:OLD_TAG

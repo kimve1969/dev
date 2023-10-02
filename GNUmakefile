@@ -12,6 +12,7 @@ help:
 	@echo "make minimun - install minimum package: vim, gcc" 
 	@echo "make upload  - upload all modified to github"
 	@echo "You are su or sudo for install"
+	# adduser kimve sudo
 minimum:
 	sudo apt update
 	sudo apt install vim
