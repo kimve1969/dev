@@ -57,7 +57,7 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 				agregate += sum[m];
 			}
 			//C[i][j] += sum;
-			C[i][j] = agregate;
+			C[i][j] += agregate;
 		}
 	}
 }
