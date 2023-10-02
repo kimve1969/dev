@@ -1,8 +1,10 @@
 .PHONY: 01 02 03 04 05 06
 build:
-	make 05cpu
-	make 06cpu
-	make 06-1cpu
+	clear
+	rm cpu05 cpu06 cpu06-1
+	make cpu05
+	make cpu06
+	make cpu06-1
 	@echo '************************************ cpu0x 1000 nopint *************************************************'
 	./cpu05 1000 mul noprint
 	@echo 'End ********************************'
@@ -10,40 +12,27 @@ build:
 	@echo 'End ********************************'
 	./cpu06-1 1000 mul noprint
 	@echo '************************************ cpu0x 2000 nopint 8 ***********************************************'
-	./cpu05 2000 mul noprint 8
+	./cpu05 1000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06 2000 mul noprint 8
+	./cpu06 1000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-1 2000 mul noprint 8
-06-1cpu:
-	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp -O3
-	./cpu06-1 4 mul print 1
-06cpu:
-	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp -O3
+	./cpu06-1 1000 mul noprint 8
+cpu06-1:
+	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp 
+	./cpu06-1 5 mul print 1
+cpu06:
+	gcc cpu06.cpp -o cpu06 -std=c++17 -lstdc++ -lm -fopenmp 
 	./cpu06 5 mul print 1
-05cpu:
-	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp -O3
+cpu05:
+	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp
 	./cpu05 5 mul print 1
-05gpu:
-	clear
+gpu05:
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp
-	@echo '************************ MATRIX OPERATION ***********************'
-	@echo '************************ |C| = |A| ADD |B|, [ 5, 5] ********************'
-	./gpu05 5 add print
-	@echo '************************ |C| = |A| MUL |B|, [ 5, 5] ********************'
 	./gpu05 5 mul print
-	@echo '************************ |C| = |A| ADD |B|, [ 300, 300] ****************'
-	./gpu05 300 add noprint
-	@echo '************************ |C| = |A| MUL |B|, [ 300, 300] ****************'
-	./gpu05 300 mul noprint
-	@echo '************************ |C| = |A| ADD |B|, [ 3 000, 3 000 ] ************'
-	./gpu05 3000 add noprint
-	@echo '************************ |C| = |A| MUL |B|, [ 3 000, 3 000 ] ************'
-	./gpu05 3000 mul noprint
-04:
+gpu04:
 	nvcc gpu04.cu -o gpu04 -std=c++17 -lstdc++ -lcuda -Xcompiler=-fopenmp
 	./gpu04 100
-03:
+gpu03:
 #max num_blocks = 31, max num_threads = 1024
 	nvcc gpu03.cu -o gpu03 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp
 	@echo '************************ num_bloks : num_thrads ***********************'
@@ -59,14 +48,11 @@ build:
 	./gpu03 16 1024
 	@echo '************************ 31 : 1024 ************************************'
 	./gpu03 20 1024
-02:
+gpu02:
 	nvcc gpu02.cu -o gpu02 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp
 	./gpu02 2 2 1 3 3 1
-	./gpu02 2 2 1 3 3 1 > 02
-	cat 02 | wc -l
-#rm kernel02
-01:
+gpu01:
 	nvcc gpu01.cu -o gpu01 -std=c++17 -lstdc++ -lcudart  -Xcompiler=-fopenmp
-#для вызова метематических функций в кернеле нужно указывать флаг компилятора: --expt-relaxed-constexpr
+	#для вызова метематических функций в кернеле нужно указывать флаг компилятора: --expt-relaxed-constexpr
 	./gpu01
-#rm kernel01
+
