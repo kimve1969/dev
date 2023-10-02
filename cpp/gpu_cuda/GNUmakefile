@@ -9,12 +9,12 @@ build:
 	./cpu06 1000 mul noprint
 	@echo 'End ********************************'
 	./cpu06-1 1000 mul noprint
-	@echo '************************************ cpu0x 3000 nopint 8 ***********************************************'
-	./cpu05 3000 mul noprint 8
+	@echo '************************************ cpu0x 2000 nopint 8 ***********************************************'
+	./cpu05 2000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06 3000 mul noprint 8
+	./cpu06 2000 mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-1 3000 mul noprint 8
+	./cpu06-1 2000 mul noprint 8
 06-1cpu:
 	gcc cpu06-1.cpp -o cpu06-1 -std=c++17 -lstdc++ -lm -fopenmp -O3
 	./cpu06-1 4 mul print 1
