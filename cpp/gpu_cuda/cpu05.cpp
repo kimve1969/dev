@@ -42,15 +42,13 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
                 #pragma omp parallel for num_threads( num_omp_threads )
                 for(int i=0; i<N; ++i)
                 {
-                        for(int j=0; j<N; ++j)
-                        {
-				double sum = 0;
-                                for(int k=0; k<N; ++k)
-                                {
-                                        sum += A[i][k] * B[k][j];
+			for(int k=0; k<N; ++k)
+			{
+				for(int j=0; j<N; ++j)
+                        	{
+					C[i][j] += A[i][k] * B[k][j];	
                                 }
-				C[i][j] = sum;
-                        }
+			}
                 }
         }
 }

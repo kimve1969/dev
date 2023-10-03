@@ -32,32 +32,25 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
+// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
+const int CNST_SIZE_OF_BLOCK = 36;
+
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
 	for(int i=0; i < row_max_C ; ++i)
-	{
-		for(int j=0; j < col_max_C ; ++j)
+	{	
+		for( int k=0; k < rc_max_AB ; ++k )
 		{
-			//double sum = 0;
 			const int PIPELINE = 4;
-			double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
-			double agregate{0};
-			
-			for( int k=0; k < rc_max_AB ; /*++k*/k += PIPELINE )
-			{
-				sum[0] += (k+0 < rc_max_AB) ? A[i][k+0] * B[k+0][j] : 0;
-				sum[1] += (k+1 < rc_max_AB) ? A[i][k+1] * B[k+1][j] : 0;
-				sum[2] += (k+2 < rc_max_AB) ? A[i][k+2] * B[k+2][j] : 0;
-				sum[3] += (k+3 < rc_max_AB) ? A[i][k+3] * B[k+3][j] : 0;
-				//sum += A[i][k] * B[k][j];
-			}
 
-			for(int m=0; m < PIPELINE; ++m)
+			for(int j=0; j < col_max_C ; j+=PIPELINE)
 			{
-				agregate += sum[m];
+				(j+0 < col_max_C) ? C[i][j + 0] += A[i][k] * B[k][j + 0] : 0;
+				(j+1 < col_max_C) ? C[i][j + 1] += A[i][k] * B[k][j + 1] : 0;
+				(j+2 < col_max_C) ? C[i][j + 2] += A[i][k] * B[k][j + 2] : 0;
+				(j+3 < col_max_C) ? C[i][j + 3] += A[i][k] * B[k][j + 3] : 0;
+				//C[i][j] += A[i][k] * B[k][j];
 			}
-			//C[i][j] += sum;
-			C[i][j] += agregate;
 		}
 	}
 }
@@ -77,9 +70,6 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
         // |C| = |A|*|B|
         if(op == MUL)
         {
-		// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-		const int CNST_SIZE_OF_BLOCK = 36;
-
 		int dimBlock = N < CNST_SIZE_OF_BLOCK ? N : CNST_SIZE_OF_BLOCK;
 		int dimGrid = N / dimBlock + ( N % dimBlock ? 1 : 0 );
 
@@ -112,9 +102,9 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 				Example: row_max = 37%36 = 1 => see Asub_mul_Bsub(..., row_max) => for(int i=0; i<row_max; ++i) 
 				*/
 
-				auto rc_max = [&dimGrid, &dimBlock, &N, &CNST_SIZE_OF_BLOCK](int Indx)
+				auto rc_max = [&dimGrid, &dimBlock, &N](int Indx, int Bound = CNST_SIZE_OF_BLOCK)
 				{
-					return (N % CNST_SIZE_OF_BLOCK) && (Indx == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock; 
+					return (N % Bound) && (Indx == (dimGrid - 1) ) ? (N % Bound) : dimBlock; 
 				};
 
 				int row_max_C = rc_max(I);

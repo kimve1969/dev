@@ -1,4 +1,4 @@
-.PHONY: 01 02 03 04 05 06
+.PHONY: cpu05 cpu06 cpu06-1 cpu06-2 cpu06-3
 OPT=-O3
 
 build:
@@ -36,6 +36,7 @@ cpu05:
 	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp $(OPT)
 	./cpu05 5 mul print 1
 gpu05:
+	rm -rf gpu05
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp $(OPT)
 	./gpu05 5 mul print
 gpu04:
