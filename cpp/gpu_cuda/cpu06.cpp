@@ -238,7 +238,7 @@ Example:\n"
         prn("\n\n|B|:\n\n", h_matrix_B, arg_N);
 
         std::cout<<"number available threads is "<<std::thread::hardware_concurrency()<<"\n";
-        std::cout<<"\ncomputation on GPU...\n";
+        std::cout<<"\ncomputation on CPU...\n";
 
         t[1] = omp_get_wtime();
         A_oper_B(h_matrix_A, h_matrix_B, h_matrix_C, arg_N, arg_operation, arg_num_threads);
@@ -266,7 +266,7 @@ Example:\n"
 
         t[3] = omp_get_wtime();
 
-        std::cout<<"\nOMP common time: "<<(t[2]-t[1])<<" sec.\n";
+        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec.\n";
 
         std::cout<<"End\n"<<std::endl;
 

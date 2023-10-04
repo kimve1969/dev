@@ -11,6 +11,7 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<stdexcept>
 #include<omp.h>
 #include<thread>
+#include<blas.hh>
 
 enum oper_t
 {
@@ -23,35 +24,6 @@ enum prn_t
         PRINT,
         NOPRINT
 } _prn_t;
-
-void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int num_omp_threads = 1){
-
-        // |C| = |A|+|B|
-        if(op == ADD){
-                #pragma omp parallel for num_threads( num_omp_threads )
-                for(int i=0; i<N; ++i){
-                        for(int j=0; j<N; ++j){
-                                C[i][j] = A[i][j] + B[i][j];
-                        }
-                }
-        }
-
-        // |C| = |A|*|B|
-        if(op == MUL)
-        {
-                #pragma omp parallel for num_threads( num_omp_threads )
-                for(int i=0; i<N; ++i)
-                {
-			for(int k=0; k<N; ++k)
-			{
-				for(int j=0; j<N; ++j)
-                        	{
-					C[i][j] += A[i][k] * B[k][j];	
-                                }
-			}
-                }
-        }
-}
 
 bool is_int(std::string arg)
 {
@@ -112,12 +84,6 @@ Example:\n"
 		long nelements = arg_N * arg_N;
         std::cout<<"number elements: "<<nelements<<std::endl;
 
-        // 2-х мерный массив в виде массива указателей на одномерный массив, т.к.
-        // потом в пакетах BLAS или cuBLAS потребуется передавать именно НЕПРЕРЫВНЫЕ массивы
-        // Есть два способа:
-        //      1-ый - высчитывать псеводо-индексы 2-х мерного массива
-        //      2-ой - создать доплнительный массив указателей
-        //      скорее всего 2-ой будет работать быстрее, т.к. исключаются вычисления псевдо-индексов
         double* h_A = new double[nelements];
         double* h_B = new double[nelements];
         double* h_C = new double[nelements];
@@ -158,10 +124,27 @@ Example:\n"
         prn("\n\n|B|:\n\n", h_matrix_B, arg_N);
 
         std::cout<<"number available threads is "<<std::thread::hardware_concurrency()<<"\n";
-        std::cout<<"\ncomputation on CPU...\n";
+        std::cout<<"\ncomputation on CPU BLAS...\n";
 
         t[1] = omp_get_wtime();
-        A_oper_B(h_matrix_A, h_matrix_B, h_matrix_C, arg_N, arg_operation, arg_num_threads);
+	// C = alpha * op(A) * op(B) + beta * C
+	// C[m][n], A[m][k], B[k][m]
+	blas::gemm(	blas::Layout::RowMajor, // layout	[ ColMajor | RowMajor ]
+			blas::Op::NoTrans,	// transA	[ Op::NoTrans | Op::Trans | Op::ConjTrans ]
+			blas::Op::NoTrans,	// transB
+			arg_N,			// m 
+			arg_N,			// n
+			arg_N,			// k
+			1.0,			// alpha
+			h_A,			// if transA = NoTrans: matrix A[m][k]
+			arg_N,			// lda, for RowMajor: lda = max(1,k)
+			h_B,			// if transB = NoTrans: matrix B[k][n]
+			arg_N,			// ldb, for RowMajor: ldb = max(1, n)
+			0,			// beta, if beta is zero, C need not be set on input
+			h_C,			// C[m][n]
+			arg_N			// ldc, for RowMajor: ldc = max(1, n)
+		   );
+
         t[2] = omp_get_wtime();
 
         std::cout<<"\ndone\n";

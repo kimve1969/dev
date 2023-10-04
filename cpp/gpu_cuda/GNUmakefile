@@ -1,24 +1,30 @@
 .PHONY: cpu05 cpu06 cpu06-1 cpu06-2 cpu06-3
 OPT=-O3
+DIM=3000
 
 build:
 	clear
-	rm -rf cpu05 cpu06 cpu06-1 cpu06-2 cpu06-3
+	rm -rf blas05 cpu05 cpu06 cpu06-1 cpu06-2 cpu06-3
+	make blas05
 	make cpu05
 	make cpu06
 	make cpu06-1
 	make cpu06-2
 	make cpu06-3
-	@echo '************************************ cpu0x-x 1000 nopint *************************************************'
-	./cpu05 1000 mul noprint
+test:
+	clear
+	@echo '************************************ cpu0x-x 1000 noprint 8 *************************************************'
+	./blas05 $(DIM) mul noprint
+	@echo '************************************'
+	./cpu05 $(DIM) mul noprint 8
 	@echo 'End ********************************'
-	./cpu06 1000 mul noprint
+	./cpu06 $(DIM) mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-1 1000 mul noprint
+	./cpu06-1 $(DIM) mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-2 1000 mul noprint
+	./cpu06-2 $(DIM) mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-3 1000 mul noprint
+	./cpu06-3 $(DIM) mul noprint 8
 	@echo 'End ********************************'
 cpu06-3:
 	gcc cpu06-3.cpp -o cpu06-3 -std=c++17 -lstdc++ -lm -fopenmp -mavx512f $(OPT) 
@@ -35,6 +41,9 @@ cpu06:
 cpu05:
 	gcc cpu05.cpp -o cpu05 -std=c++17 -lstdc++ -fopenmp $(OPT)
 	./cpu05 5 mul print 1
+blas05:
+	gcc blas05.cpp -o blas05 -std=c++17 -lstdc++ `pkg-config blaspp --cflags --libs` -fopenmp $(OPT)
+	./blas05 5 mul print 1
 gpu05:
 	rm -rf gpu05
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp $(OPT)
