@@ -2,7 +2,7 @@
 Copyright:      "Surgutneftegas" PJSC
 Autors:         Created by Kim V.E. 2023/09/06
 Target:         For education
-		used optimization cpu06.cpp + ALIGN(64) + unrooling loop
+		bases on cpu05.cpp + optimization by used sub-matrixes multiplier
 Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 
 *************************************************************************/
@@ -18,9 +18,9 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<immintrin.h>
 
 #ifdef __GNUC__
-	#define ALIGN(N) __attribute__((aligned(N)))	// Linux
+        #define ALIGN(N) __attribute__((aligned(N)))    // Linux
 #else
-	#define ALIGN(N) __declspec(align(N))		// Windows
+	#define ALIGN(N) __declspec(align(N))           // Windows
 #endif
 
 enum oper_t
@@ -35,45 +35,77 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
+// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
+const int CNST_DIM_OF_BLOCK = 128;
+
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
+	// local copy of B sub-matrix
+	double  B1D[ CNST_DIM_OF_BLOCK * CNST_DIM_OF_BLOCK ];
+	double* B2D[ CNST_DIM_OF_BLOCK ];
+	
+	for(int row = 0; row < CNST_DIM_OF_BLOCK; ++row)
+	{
+		B2D[ row ] = & B1D[ row * CNST_DIM_OF_BLOCK ];
+	}
+
+	// copy from B[k][j] to B2D[j][k], B = trans( B2D )
+	for(int k = 0; k < rc_max_AB; ++k)
+	{
+		for(int j = 0; j < col_max_C; ++j)
+		{
+			B2D[j][k] = B[k][j];
+		}
+	}
+
+	// C[i][j] = Sum ( A[i][k] * B[k][j] ) = Sum( A[i][k] * B2D[j][k] )
 	for(int i=0; i < row_max_C ; ++i)
 	{
 		for(int j=0; j < col_max_C ; ++j)
 		{
+                        // AVX512F, gcc -mavx512f
 			const int VECTOR_SIZE = 8;
 
-			// AVX512F, gcc -mafx512f
 			ALIGN(64) __m512d c8d = _mm512_set_pd(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-		       	ALIGN(64) __m512d a8d;
-			ALIGN(64) __m512d b8d;	
+			ALIGN(64) __m512d a8d;
+			ALIGN(64) __m512d b8d;
 
-			for( int k=0; k < rc_max_AB ; k += VECTOR_SIZE )
+			// from 1 to pre-last steps vectorization
+			int k = 0;
+			for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
 			{
-				// __m512d _mm512_set_pd( double e7, double e6, ..., double e0 )
-				a8d = _mm512_set_pd( 	(k+7 < rc_max_AB ? A[i][k+7] : 0) , 
-							(k+6 < rc_max_AB ? A[i][k+6] : 0) , 
-							(k+5 < rc_max_AB ? A[i][k+5] : 0) , 
-							(k+4 < rc_max_AB ? A[i][k+4] : 0) , 
-							(k+3 < rc_max_AB ? A[i][k+3] : 0) , 
-							(k+2 < rc_max_AB ? A[i][k+2] : 0) , 
-							(k+1 < rc_max_AB ? A[i][k+1] : 0) , 
-							(k+0 < rc_max_AB ? A[i][k+0] : 0) );
+				// _m512d _mm512_set_pd( double e7, double e6, ..., double e0 )
+				a8d = _mm512_set_pd(    A[i][k+7], A[i][k+6], A[i][k+5], A[i][k+4],
+							A[i][k+3], A[i][k+2], A[i][k+1], A[i][k+0]);
 
-				b8d = _mm512_set_pd( 	(k+7 < rc_max_AB ? B[k+7][j] : 0) ,
-							(k+6 < rc_max_AB ? B[k+6][j] : 0) , 
-							(k+5 < rc_max_AB ? B[k+5][j] : 0) , 
-							(k+4 < rc_max_AB ? B[k+4][j] : 0) , 
-							(k+3 < rc_max_AB ? B[k+3][j] : 0) , 
-							(k+2 < rc_max_AB ? B[k+2][j] : 0) , 
-							(k+1 < rc_max_AB ? B[k+1][j] : 0) , 
-							(k+0 < rc_max_AB ? B[k+0][j] : 0) );
-				
+                                b8d = _mm512_set_pd(    B2D[j][k+7], B2D[j][k+6], B2D[j][k+5], B2D[j][k+4],
+							B2D[j][k+3], B2D[j][k+2], B2D[j][k+1], B2D[j][k+0]);
+
 				c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
 			}
 
-			C[i][j] += ((double*)(&c8d))[0] + ((double*)(&c8d))[1] + ((double*)(&c8d))[2]  +  ((double*)(&c8d))[3] + 
-				   ((double*)(&c8d))[4] +  ((double*)(&c8d))[5] +  ((double*)(&c8d))[6] +  ((double*)(&c8d))[7];
+			// last step vectorization with check bounds rc_max_AB
+			a8d = _mm512_set_pd(    (k+7 < rc_max_AB ? A[i][k+7] : 0),
+						(k+6 < rc_max_AB ? A[i][k+6] : 0),
+						(k+5 < rc_max_AB ? A[i][k+5] : 0),
+						(k+4 < rc_max_AB ? A[i][k+4] : 0),												                                            (k+3 < rc_max_AB ? A[i][k+3] : 0),
+						(k+2 < rc_max_AB ? A[i][k+2] : 0),
+						(k+1 < rc_max_AB ? A[i][k+1] : 0),
+						(k+0 < rc_max_AB ? A[i][k+0] : 0));
+
+			b8d = _mm512_set_pd(    (k+7 < rc_max_AB ? B2D[j][k+7] : 0),
+						(k+6 < rc_max_AB ? B2D[j][k+6] : 0),
+						(k+5 < rc_max_AB ? B2D[j][k+5] : 0),
+						(k+4 < rc_max_AB ? B2D[j][k+4] : 0),
+						(k+3 < rc_max_AB ? B2D[j][k+3] : 0),
+						(k+2 < rc_max_AB ? B2D[j][k+2] : 0),
+						(k+1 < rc_max_AB ? B2D[j][k+1] : 0),
+						(k+0 < rc_max_AB ? B2D[j][k+0] : 0) );
+			
+			c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
+
+			C[i][j] += ((double*)(&c8d))[7] + ((double*)(&c8d))[6] + ((double*)(&c8d))[5]  +  ((double*)(&c8d))[4] +
+				   ((double*)(&c8d))[3] +  ((double*)(&c8d))[2] +  ((double*)(&c8d))[1] +  ((double*)(&c8d))[0];
 		}
 	}
 }
@@ -93,23 +125,20 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
         // |C| = |A|*|B|
         if(op == MUL)
         {
-		// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-		const int CNST_SIZE_OF_BLOCK = 36;
-
-		int dimBlock = N < CNST_SIZE_OF_BLOCK ? N : CNST_SIZE_OF_BLOCK;
+		
+		int dimBlock = N < CNST_DIM_OF_BLOCK ? N : CNST_DIM_OF_BLOCK;
 		int dimGrid = N / dimBlock + ( N % dimBlock ? 1 : 0 );
 
-		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock) 		
+		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
 		for( int I = 0; I < dimGrid; ++I )
 		{
-			double **Asub = new double*[dimBlock]; 
-			double **Bsub = new double*[dimBlock];
-	       		double **Csub = new double*[dimBlock];
-			
-			#pragma omp private(Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB)
+			#pragma omp private(Asub, Bsub, Csub, row_max, col_max)
 			for( int J = 0; J < dimGrid; ++J  )
 			{
-				
+				double **Asub = new double*[dimBlock]; 
+				double **Bsub = new double*[dimBlock];
+	       			double **Csub = new double*[dimBlock];
+
 				/*
 		 		 See above Asub_mul_Bsub
 		 								     col max |
@@ -128,9 +157,9 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 				Example: row_max = 37%36 = 1 => see Asub_mul_Bsub(..., row_max) => for(int i=0; i<row_max; ++i) 
 				*/
 
-				auto rc_max = [&dimGrid, &dimBlock, &N, &CNST_SIZE_OF_BLOCK](int Indx)
+				auto rc_max = [&dimGrid, &dimBlock, &N](int Indx, int Bound = CNST_DIM_OF_BLOCK)
 				{
-					return (N % CNST_SIZE_OF_BLOCK) && (Indx == (dimGrid - 1) ) ? (N % CNST_SIZE_OF_BLOCK) : dimBlock; 
+					return (N % Bound) && (Indx == (dimGrid - 1) ) ? (N % Bound) : dimBlock; 
 				};
 
 				int row_max_C = rc_max(I);
@@ -162,12 +191,10 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 					Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
 				}
 
+				delete[] Asub;
+				delete[] Bsub;
+				delete[] Csub;
 			}
-
-			delete[] Asub;
-			delete[] Bsub;
-			delete[] Csub;
-
 		}
 
 	}
@@ -238,9 +265,9 @@ Example:\n"
         //      1-ый - высчитывать псеводо-индексы 2-х мерного массива
         //      2-ой - создать доплнительный массив указателей
         //      скорее всего 2-ой будет работать быстрее, т.к. исключаются вычисления псевдо-индексов
-        ALIGN(64) double* h_A = new double[nelements];
-        ALIGN(64) double* h_B = new double[nelements];
-        ALIGN(64) double* h_C = new double[nelements];
+        double* h_A = new double[nelements];
+        double* h_B = new double[nelements];
+        double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
                 h_A[i] = i*2.1;
@@ -248,9 +275,9 @@ Example:\n"
                 h_C[i] = 0.0;
         }
 
-        ALIGN(64) double** h_matrix_A = new double*[arg_N];
-        ALIGN(64) double** h_matrix_B = new double*[arg_N];
-        ALIGN(64) double** h_matrix_C = new double*[arg_N];
+        double** h_matrix_A = new double*[arg_N];
+        double** h_matrix_B = new double*[arg_N];
+        double** h_matrix_C = new double*[arg_N];
 
         for(int i=0; i<arg_N; ++i){
                 h_matrix_A[i] = &h_A[i*arg_N];
@@ -306,7 +333,7 @@ Example:\n"
 
         t[3] = omp_get_wtime();
 
-        std::cout<<"\nOMP calcualation time: "<<(t[2]-t[1])<<" sec.\n";
+        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec.\n";
 
         std::cout<<"End\n"<<std::endl;
 
