@@ -9,9 +9,9 @@ build:
 	make cpu05
 	make cpu06
 	make cpu06-trans
+	make cpu06-trans-scalar
 	make cpu06-trans-sse
 	make cpu06-trans-avx512f
-	make cpu06-trans-scalar
 test:
 	clear
 	@echo '************************************ cpu0x-x 1000 noprint 8 *************************************************'
@@ -23,15 +23,12 @@ test:
 	@echo 'End ********************************'
 	./cpu06-trans $(DIM) mul noprint 8
 	@echo 'End ********************************'
+	./cpu06-trans-scalar $(DIM) mul noprint 8
+	@echo 'End ********************************'
 	./cpu06-trans-sse $(DIM) mul noprint 8
 	@echo 'End ********************************'
 	./cpu06-trans-avx512f $(DIM) mul noprint 8
 	@echo 'End ********************************'
-	./cpu06-trans-scalar $(DIM) mul noprint 8
-	@echo 'End ********************************'
-cpu06-trans-scalar:
-	gcc cpu06-trans-scalar.cpp -o cpu06-trans-scalar -std=c++17 -lstdc++ -lm -fopenmp $(OPT)
-	./cpu06-trans-scalar 5 mul print 1
 cpu06-trans-avx512f:
 	# see lscpu | grep avx512f
 	gcc cpu06-trans-avx512f.cpp -o cpu06-trans-avx512f -std=c++17 -lstdc++ -lm -fopenmp -mavx512f $(OPT)
@@ -40,6 +37,9 @@ cpu06-trans-sse:
 	# see lscpu | grep sse
 	gcc cpu06-trans-sse.cpp -o cpu06-trans-sse -std=c++17 -lstdc++ -lm -fopenmp -mfma $(OPT)
 	./cpu06-trans-sse 5 mul print 1
+cpu06-trans-scalar:
+	gcc cpu06-trans-scalar.cpp -o cpu06-trans-scalar -std=c++17 -lstdc++ -lm -fopenmp $(OPT)
+	./cpu06-trans-scalar 5 mul print 1
 cpu06-trans:
 	gcc cpu06-trans.cpp -o cpu06-trans -std=c++17 -lstdc++ -lm -fopenmp $(OPT)
 	./cpu06-trans 5 mul print 1
