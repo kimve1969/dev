@@ -62,22 +62,13 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 		{
 			// optimization for out-of-order pipepline
 			const int PIPELINE = 4;
-			ALIGN(64) double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};//, 0.0, 0.0, 0.0, 0.0};
+			ALIGN(64) double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};// 0.0, 0.0, 0.0, 0.0};
 
 			// reduction from 1 to pre-last step
 			int k = 0;
 			for( /*k see above*/ ; k < (rc_max_AB - PIPELINE) ; k += PIPELINE)
 			{
 				// out-of-order pipeline
-
-				/*sum[0] += A[i][k+0] * B2D[j][k+0];
-				sum[1] += A[i][k+1] * B2D[j][k+1];
-				sum[2] += A[i][k+2] * B2D[j][k+2];
-				sum[3] += A[i][k+3] * B2D[j][k+3];
-				sum[4] += A[i][k+4] * B2D[j][k+4];
-				sum[5] += A[i][k+5] * B2D[j][k+5];
-				sum[6] += A[i][k+6] * B2D[j][k+6];
-				sum[7] += A[i][k+7] * B2D[j][k+7];*/
 				for(int p=0; p<PIPELINE; ++p)
 				{
 					sum[p] += A[i][k+p] * B2D[j][k+p];
@@ -85,23 +76,11 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 			}
 
 			// last step, out-of-order pipeline
-			//
-			/*(k+0 < rc_max_AB) ? sum[0] += A[i][k+0] * B2D[j][k+0] : 0.0;
-			(k+1 < rc_max_AB) ? sum[1] += A[i][k+1] * B2D[j][k+1] : 0.0;
-			(k+2 < rc_max_AB) ? sum[2] += A[i][k+2] * B2D[j][k+2] : 0.0;
-			(k+3 < rc_max_AB) ? sum[3] += A[i][k+3] * B2D[j][k+3] : 0.0;
-			(k+4 < rc_max_AB) ? sum[4] += A[i][k+4] * B2D[j][k+4] : 0.0;
-			(k+5 < rc_max_AB) ? sum[5] += A[i][k+5] * B2D[j][k+5] : 0.0;
-			(k+6 < rc_max_AB) ? sum[6] += A[i][k+6] * B2D[j][k+6] : 0.0;
-			(k+7 < rc_max_AB) ? sum[7] += A[i][k+7] * B2D[j][k+7] : 0.0;*/
-
 			for(int p=0; p < PIPELINE; ++p)
 			{
 				(k+p < rc_max_AB) ? sum[p] += A[i][k+p] * B2D[j][k+p] : 0.0;
 			}
 
-			//C[i][j] += sum[0] + sum[1] + sum[2] + sum[3] + sum[4] + sum[5] + sum[6] + sum[7];
-			
 			double agr_sum{0};
 			for(int p=0; p < PIPELINE; ++p)
 			{

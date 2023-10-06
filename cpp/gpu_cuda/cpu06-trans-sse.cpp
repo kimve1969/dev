@@ -35,8 +35,11 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-const int CNST_DIM_OF_BLOCK = 32;
+// L1-cash is 32678 byte = 4096 double
+// IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
+// IF 2 sub-matrixes * 2048 double, each of 2 matrix is 45x45 double
+// IF 1 sub-matrixes * 4096 double, 1 matrix is 64x64 double
+const int CNST_DIM_OF_BLOCK = 45;
 
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
@@ -74,7 +77,7 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 			int k = 0;
 			for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
 			{
-				// __128d _mm_set_pd( double e1, double e0 )
+				// __m128d _mm_set_pd( double e1, double e0 )
 				a2d = _mm_set_pd( A[i][k+1], A[i][k+0] );
 				b2d = _mm_set_pd( B2D[j][k+1], B2D[j][k+0] );
 				// FMA, gcc -mfma

@@ -26,8 +26,11 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-const int CNST_DIM_OF_BLOCK = 32;
+// L1-cash is 32678 byte = 4096 double
+// IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
+// IF 2 sub-matrixes * 2048 double, each of 2 matrix is 45x45 double
+// IF 1 sub-matrixes * 4096 double, 1 matrix is 64x64 double
+const int CNST_DIM_OF_BLOCK = 45;
 
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
@@ -86,13 +89,13 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
 		for( int I = 0; I < dimGrid; ++I )
 		{
+			double **Asub = new double*[dimBlock]; 
+			double **Bsub = new double*[dimBlock];
+	       		double **Csub = new double*[dimBlock];
+
 			#pragma omp private(Asub, Bsub, Csub, row_max, col_max)
 			for( int J = 0; J < dimGrid; ++J  )
 			{
-				double **Asub = new double*[dimBlock]; 
-				double **Bsub = new double*[dimBlock];
-	       			double **Csub = new double*[dimBlock];
-
 				/*
 		 		 See above Asub_mul_Bsub
 		 								     col max |
@@ -145,10 +148,11 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 					Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
 				}
 
-				delete[] Asub;
-				delete[] Bsub;
-				delete[] Csub;
 			}
+
+			delete[] Asub;
+			delete[] Bsub;
+			delete[] Csub;
 		}
 
 	}

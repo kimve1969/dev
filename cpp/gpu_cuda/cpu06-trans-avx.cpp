@@ -35,8 +35,11 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-// L1-cash is 32678 byte = 4096 double = 3 sub-matrixes * 1365 byte, each matrix is 36x36 doubles
-const int CNST_DIM_OF_BLOCK = 128;
+// L1-cash is 32678 byte = 4096 double
+// IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
+// IF 2 sub-matrixes * 2048 double, each of 2 matrix is 45x45 double
+// IF 1 sub-matrixes * 4096 double, 1 matrix is 64x64 double
+const int CNST_DIM_OF_BLOCK = 45;
 
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
 {
@@ -64,48 +67,38 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 		for(int j=0; j < col_max_C ; ++j)
 		{
                         // AVX512F, gcc -mavx512f
-			const int VECTOR_SIZE = 8;
+			const int VECTOR_SIZE = 4;
 
-			ALIGN(64) __m512d c8d = _mm512_set_pd(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-			ALIGN(64) __m512d a8d;
-			ALIGN(64) __m512d b8d;
+			ALIGN(64) __m256d c4d = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+			ALIGN(64) __m256d a4d;
+			ALIGN(64) __m256d b4d;
 
 			// from 1 to pre-last steps vectorization
 			int k = 0;
 			for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
 			{
-				// _m512d _mm512_set_pd( double e7, double e6, ..., double e0 )
-				a8d = _mm512_set_pd(    A[i][k+7], A[i][k+6], A[i][k+5], A[i][k+4],
-							A[i][k+3], A[i][k+2], A[i][k+1], A[i][k+0]);
+				// _m256d _mm256_set_pd( double e3, double e2, double e1, double e0 )
+				a4d = _mm256_set_pd( A[i][k+3], A[i][k+2], A[i][k+1], A[i][k+0] );
 
-                                b8d = _mm512_set_pd(    B2D[j][k+7], B2D[j][k+6], B2D[j][k+5], B2D[j][k+4],
-							B2D[j][k+3], B2D[j][k+2], B2D[j][k+1], B2D[j][k+0]);
+                                b4d = _mm256_set_pd( B2D[j][k+3], B2D[j][k+2], B2D[j][k+1], B2D[j][k+0] );
 
-				c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
+				c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
 			}
 
 			// last step vectorization with check bounds rc_max_AB
-			a8d = _mm512_set_pd(    (k+7 < rc_max_AB ? A[i][k+7] : 0),
-						(k+6 < rc_max_AB ? A[i][k+6] : 0),
-						(k+5 < rc_max_AB ? A[i][k+5] : 0),
-						(k+4 < rc_max_AB ? A[i][k+4] : 0),												                                            (k+3 < rc_max_AB ? A[i][k+3] : 0),
+			a4d = _mm256_set_pd(    (k+3 < rc_max_AB ? A[i][k+3] : 0),
 						(k+2 < rc_max_AB ? A[i][k+2] : 0),
 						(k+1 < rc_max_AB ? A[i][k+1] : 0),
 						(k+0 < rc_max_AB ? A[i][k+0] : 0));
 
-			b8d = _mm512_set_pd(    (k+7 < rc_max_AB ? B2D[j][k+7] : 0),
-						(k+6 < rc_max_AB ? B2D[j][k+6] : 0),
-						(k+5 < rc_max_AB ? B2D[j][k+5] : 0),
-						(k+4 < rc_max_AB ? B2D[j][k+4] : 0),
-						(k+3 < rc_max_AB ? B2D[j][k+3] : 0),
+			b4d = _mm256_set_pd(    (k+3 < rc_max_AB ? B2D[j][k+3] : 0),
 						(k+2 < rc_max_AB ? B2D[j][k+2] : 0),
 						(k+1 < rc_max_AB ? B2D[j][k+1] : 0),
 						(k+0 < rc_max_AB ? B2D[j][k+0] : 0) );
 			
-			c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
+			c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
 
-			C[i][j] += ((double*)(&c8d))[7] + ((double*)(&c8d))[6] + ((double*)(&c8d))[5]  +  ((double*)(&c8d))[4] +
-				   ((double*)(&c8d))[3] +  ((double*)(&c8d))[2] +  ((double*)(&c8d))[1] +  ((double*)(&c8d))[0];
+			C[i][j] += ((double*)(&c4d))[3] +  ((double*)(&c4d))[2] +  ((double*)(&c4d))[1] +  ((double*)(&c4d))[0];
 		}
 	}
 }
