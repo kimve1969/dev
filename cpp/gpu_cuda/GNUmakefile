@@ -17,6 +17,16 @@ test:
 	./cpu-noblock $(DIM) mul noprint $(NCORE)
 	@echo '************************************'
 	./cpu-block $(DIM) mul noprint $(NCORE)
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) trans
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) trans+red
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) trans+sse2
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) trans+avx
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) trans+avx512f
 	@echo 'End ********************************'
 cpu-block:
 	# see lscpu | grep avx

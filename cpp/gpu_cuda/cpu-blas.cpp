@@ -81,7 +81,7 @@ Example:\n"
 
         t[0] = omp_get_wtime();
 
-		long nelements = arg_N * arg_N;
+	long nelements = arg_N * arg_N;
         std::cout<<"number elements: "<<nelements<<std::endl;
 
         double* h_A = new double[nelements];
@@ -169,7 +169,8 @@ Example:\n"
 
         t[3] = omp_get_wtime();
 
-        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec.\n";
+	double gflops = ( 2 * (double)arg_N * (double)arg_N * (double)arg_N ) / ( t[2] - t[1] ) / 1'000'000'000.0;
+        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
 
         std::cout<<"End\n"<<std::endl;
 

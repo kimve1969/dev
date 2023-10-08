@@ -320,27 +320,15 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 						Bsub[ row ] = &B[ K * dimBlock + row ][ J * dimBlock ];
 					}
 					
-					// Csub[I][J] = Asub[I][K] * Bsub[K][J];
-					switch( opt )
+					if( opt == NO )
 					{
-						case NO:
-							Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
-							break;
-						case TRANS:
-							Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-							break;
-						case TRANS_AND_RED:
-							Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-							break;
-						case TRANS_AND_SSE2:
-							Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-							break;
-						case TRANS_AND_AVX:
-							Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-							break;
-						case TRANS_AND_AVX512F:
-							Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-							break;
+						// Csub[I][J] = Asub[I][K] * Bsub[K][J]
+						Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
+					}
+					else
+					{
+						// Csub[I][J] = Asub[I][K] * trans (Bsub[K][J])
+						Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
 
 					}
 				}
@@ -419,8 +407,6 @@ Example:\n"
 						       std::string( argv[5] ) == "trans+sse2" ? TRANS_AND_SSE2 :
 						       std::string( argv[5] ) == "trans+avx" ? TRANS_AND_AVX :
 						       std::string( argv[5] ) == "trans+avx512f" ? TRANS_AND_AVX512F : NO /* defaulte no optimization */ };
-	std::cout<<"params: argN = "<<arg_N<<", arg_operation = "<<arg_operation<<", arg_print = "<<arg_print<<", arg_num_threads = "<<arg_num_threads
-	<<", arg_optimization = "<<arg_optimization<<"\n";
 
         double t[10];
 
@@ -503,7 +489,8 @@ Example:\n"
 
         t[3] = omp_get_wtime();
 
-        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec.\n";
+	double gflops = ( 2 * (double)arg_N * (double)arg_N * (double)arg_N ) / ( t[2] - t[1] ) / 1'000'000'000.0;
+        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
 
         std::cout<<"End\n"<<std::endl;
 
