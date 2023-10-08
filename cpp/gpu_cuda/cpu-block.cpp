@@ -49,7 +49,7 @@ enum opt_t
 // IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
 // IF 2 sub-matrixes * 2048 double, each of 2 matrix is 45x45 double
 // IF 1 sub-matrixes * 4096 double, 1 matrix is 64x64 double
-const int CNST_DIM_OF_BLOCK = 36;
+const int CNST_DIM_OF_BLOCK = 45;
 
 // C = Sum ( A * B )
 void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
