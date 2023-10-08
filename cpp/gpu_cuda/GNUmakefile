@@ -1,14 +1,16 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
-OPT=-O3	
+OPT=-O2
 DIM=1000
 NCORE=1
 
 
 cpu:
 	clear
-	rm -rf blas05 cpu05 cpu06 cpu06-trans cpu06-trans-scalar cpu06-trans-sse cpu06-trans-avx
+	rm -rf blas05 cpu05 cpu-block
 	make blas05
 	make cpu05
+	make cpu-block
+ttt:
 	make cpu06
 	make cpu06-trans
 	make cpu06-trans-scalar
@@ -20,6 +22,9 @@ test:
 	./blas05 $(DIM) mul noprint
 	@echo '************************************'
 	./cpu05 $(DIM) mul noprint $(NCORE)
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) sse2
+ttt2:
 	@echo 'End ********************************'
 	./cpu06 $(DIM) mul noprint $(NCORE)
 	@echo 'End ********************************'
@@ -31,6 +36,10 @@ test:
 	@echo 'End ********************************'
 	./cpu06-trans-avx $(DIM) mul noprint $(NCORE)
 	@echo 'End ********************************'
+cpu-block:
+	# see lscpu | grep avx
+	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT)
+	./cpu-block 5 mul print 1 trans
 cpu06-trans-avx:
 	# see lscpu | grep avx
 	gcc cpu06-trans-avx.cpp -o cpu06-trans-avx -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma $(OPT)
