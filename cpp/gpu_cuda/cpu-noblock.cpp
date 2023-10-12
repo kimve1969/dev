@@ -12,6 +12,13 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<omp.h>
 #include<thread>
 
+#ifdef __GNUC__
+        #define ALIGN(N) __attribute__((aligned(N)))    // Linux
+#else
+	#define ALIGN(N) __declspec(align(N))           // Windows
+#endif
+
+
 enum oper_t
 {
         ADD,
@@ -24,7 +31,7 @@ enum prn_t
         NOPRINT
 } _prn_t;
 
-void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int num_omp_threads = 1){
+void A_oper_B(const double* const * A, const double* const * B, double* const * C, int N, oper_t op = ADD, int num_omp_threads = 1){
 
         // |C| = |A|+|B|
         if(op == ADD){
@@ -118,9 +125,9 @@ Example:\n"
         //      1-ый - высчитывать псеводо-индексы 2-х мерного массива
         //      2-ой - создать доплнительный массив указателей
         //      скорее всего 2-ой будет работать быстрее, т.к. исключаются вычисления псевдо-индексов
-        double* h_A = new double[nelements];
-        double* h_B = new double[nelements];
-        double* h_C = new double[nelements];
+        ALIGN(64) double* h_A = new double[nelements];
+        ALIGN(64) double* h_B = new double[nelements];
+        ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
                 h_A[i] = i*2.1;
@@ -128,9 +135,9 @@ Example:\n"
                 h_C[i] = 0.0;
         }
 
-        double** h_matrix_A = new double*[arg_N];
-        double** h_matrix_B = new double*[arg_N];
-        double** h_matrix_C = new double*[arg_N];
+        ALIGN(64) double** h_matrix_A = new double*[arg_N];
+        ALIGN(64) double** h_matrix_B = new double*[arg_N];
+        ALIGN(64) double** h_matrix_C = new double*[arg_N];
 
         for(int i=0; i<arg_N; ++i){
                 h_matrix_A[i] = &h_A[i*arg_N];

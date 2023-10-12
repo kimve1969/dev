@@ -1,7 +1,9 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
 OPT=-O3
-DIM=2000
+DIM=1000
 NCORE=8
+#skylake, broadwell, haswell, ivybridge, x86-64
+ARCH=-march=x86-64 -fPIC
 
 cpu:
 	clear
@@ -18,6 +20,13 @@ test:
 	@echo '************************************'
 	./cpu-block $(DIM) mul noprint $(NCORE)
 	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) sse2
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) avx
+	@echo '************************************'
+	./cpu-block $(DIM) mul noprint $(NCORE) avx512f
+	@echo '************************************'
+ttt:
 	./cpu-block $(DIM) mul noprint $(NCORE) trans
 	@echo '************************************'
 	./cpu-block $(DIM) mul noprint $(NCORE) trans+red
@@ -30,13 +39,13 @@ test:
 	@echo 'End ********************************'
 cpu-block:
 	# see lscpu | grep avx
-	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT)
+	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT) $(ARCH)
 	./cpu-block 5 mul print 1 trans
 cpu-noblock:
-	gcc cpu-noblock.cpp -o cpu-noblock -std=c++17 -lstdc++ -fopenmp $(OPT)
+	gcc cpu-noblock.cpp -o cpu-noblock -std=c++17 -lstdc++ -fopenmp $(OPT) $(ARCH)
 	./cpu-noblock 5 mul print 1
 cpu-blas:
-	gcc cpu-blas.cpp -o cpu-blas -std=c++17 -lstdc++ `pkg-config blaspp --cflags --libs` -fopenmp $(OPT)
+	gcc cpu-blas.cpp -o cpu-blas -std=c++17 -lstdc++ `pkg-config blaspp --cflags --libs` -fopenmp $(OPT) $(ARCH)
 	./cpu-blas 5 mul print 1
 gpu05:
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp $(OPT)

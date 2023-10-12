@@ -38,6 +38,9 @@ enum prn_t
 enum opt_t
 {
 	NO,
+	SSE2,
+	AVX,
+	AVX512F,
 	TRANS,
 	TRANS_AND_RED,
 	TRANS_AND_SSE2,
@@ -52,7 +55,7 @@ enum opt_t
 const int CNST_DIM_OF_BLOCK = 45;
 
 // C = Sum ( A * B )
-void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB )
+void Asub_mul_Bsub( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB )
 {
 	for(int i=0; i < row_max_C ; ++i)
 	{
@@ -66,17 +69,114 @@ void Asub_mul_Bsub( double** A, double** B, double** C, int row_max_C, int col_m
 	}
 }
 
-void Asub_mul_transBsub( double** A, double** B, double** C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt )
+void Asub_mul_Bsub_opt( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt = SSE2 )
 {
-	// local copy of B sub-matrix
-	double  B1D[ CNST_DIM_OF_BLOCK * CNST_DIM_OF_BLOCK ];
-	double* B2D[ CNST_DIM_OF_BLOCK ];
-	
-	for(int row = 0; row < CNST_DIM_OF_BLOCK; ++row)
+	for(int i=0; i < row_max_C ; ++i)
 	{
-		B2D[ row ] = & B1D[ row * CNST_DIM_OF_BLOCK ];
-	}
+		for(int k=0; k < rc_max_AB ; ++k)
+		{
+			if( opt == SSE2 )
+			{
+				// SSE vectorization
+				const int VECTOR_SIZE = 2;
 
+				ALIGN(16) __m128d a2d = _mm_set1_pd( A[i][k] );
+				//ALIGN(16) __m128d b2d;
+				//ALIGN(16) __m128d c2d;
+
+				// from 1 to pre-last steps vectorization
+				int j = 0;
+				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				{
+					// B[k][j+1], B[k][j+0] -> b2d 
+					//b2d = _mm_loadu_pd( & B[k][j] );
+					// C[i][j+1], C[i][j+0] -> c2d 
+					//c2d = _mm_loadu_pd( & C[i][j] );
+					// FMA, gcc -mfma
+					//c2d = _mm_fmadd_pd( a2d, b2d, c2d );
+					// c2d -> C[i][j+1], C[i][j+0] 
+					//_mm_storeu_pd( & C[i][j], c2d );
+					_mm_storeu_pd( & C[i][j], _mm_fmadd_pd( a2d, 
+								  _mm_loadu_pd( & B[k][j] ), 
+					       		          _mm_loadu_pd( & C[i][j] )));
+
+				}
+
+				// last step vectorization with check bounds rc_max_AB
+
+			}
+			else if( opt == AVX )
+			{
+				// AVX vectorization
+				const int VECTOR_SIZE = 4;
+
+				ALIGN(32) __m256d a4d = _mm256_set1_pd( A[i][k] );
+				//ALIGN(32) __m256d b4d;
+				//ALIGN(32) __m256d c4d;
+
+				// from 1 to pre-last steps vectorization
+				int j = 0;
+				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				{
+					// B[k][j+1], B[k][j+0] -> b2d 
+					//b4d = _mm256_loadu_pd( & B[k][j] );
+					// C[i][j+1], C[i][j+0] -> c2d 
+					//c4d = _mm256_loadu_pd( & C[i][j] );
+					// FMA, gcc -mfma
+					//c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
+					//c2d -> C[i][j+1], C[i][j+0] 
+					//_mm256_storeu_pd( & C[i][j], c4d );
+					_mm256_storeu_pd( & C[i][j], _mm256_fmadd_pd( a4d, 
+								     _mm256_loadu_pd( & B[k][j] ), 
+								      _mm256_loadu_pd( & C[i][j] )));
+					//_mm256_storeu_pd( & C[i][j+1], _mm256_fmadd_pd( a4d, 
+					//				 _mm256_loadu_pd( & B[k][j+1] ), 
+					//				 _mm256_loadu_pd( & C[i][j+1] )));
+
+				}
+				// last step vectorization with check bounds rc_max_AB
+			}
+			else if( opt == AVX512F )
+			{
+				// AVX512F vectorization
+				const int VECTOR_SIZE = 8;
+
+				ALIGN(64) __m512d a8d = _mm512_set1_pd( A[i][k] );
+				//ALIGN(64) __m512d b8d;
+				//ALIGN(64) __m512d c8d;
+
+				// from 1 to pre-last steps vectorization
+				int j = 0;
+				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				{
+					// B[k][j+1], B[k][j+0] -> b2d 
+					//b8d = _mm512_loadu_pd( & B[k][j] );
+					// C[i][j+1], C[i][j+0] -> c2d 
+					//c8d = _mm512_loadu_pd( & C[i][j] );
+					// FMA, gcc -mfma
+					//c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
+					// c2d -> C[i][j+1], C[i][j+0] 
+					//_mm512_storeu_pd( & C[i][j], c8d );
+					_mm512_storeu_pd( & C[i][j], _mm512_fmadd_pd( a8d, 
+								     _mm512_loadu_pd( & B[k][j] ), 
+								     _mm512_loadu_pd( & C[i][j] )));
+
+				}
+
+				// last step vectorization with check bounds rc_max_AB
+			}
+			else
+			{
+				assert(false);
+			}
+
+		}
+	}
+}
+
+void Asub_mul_transBsub( const double* const * A, const double* const * B, double* const* C, 
+			 int row_max_C, int col_max_C, int rc_max_AB, opt_t opt, double* const * B2D /* transpon(B) */ )
+{
 	// copy from B[k][j] to B2D[j][k], B = trans( B2D )
 	for(int k = 0; k < rc_max_AB; ++k)
 	{
@@ -93,7 +193,7 @@ void Asub_mul_transBsub( double** A, double** B, double** C, int row_max_C, int 
 		{
 			if( opt == TRANS )
 			{
-				double sum{0};
+				ALIGN(64) double sum{0};
 				for(int k=0; k < rc_max_AB ; ++k)
 				{
 					sum += A[i][k] * B2D[j][k];
@@ -104,7 +204,7 @@ void Asub_mul_transBsub( double** A, double** B, double** C, int row_max_C, int 
 			{
 				// optimization for out-of-order pipepline
 				const int PIPELINE = 4;
-				ALIGN(64) double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};// 0.0, 0.0, 0.0, 0.0};
+				ALIGN(64) double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
 
 				// reduction from 1 to pre-last step
 				int k = 0;
@@ -244,7 +344,7 @@ void Asub_mul_transBsub( double** A, double** B, double** C, int row_max_C, int 
 	}
 }
 
-void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int num_omp_threads = 1, opt_t opt = NO){
+void A_oper_B(const double* const * A, const double* const* B, double* const * C, int N, oper_t op = ADD, int num_omp_threads = 1, opt_t opt = NO){
 
         // |C| = |A|+|B|
         if(op == ADD){
@@ -265,9 +365,18 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 		#pragma omp parallel for num_threads( num_omp_threads ) shared(dimGrid, dimBlock)
 		for( int I = 0; I < dimGrid; ++I )
 		{
-			double **Asub = new double*[dimBlock]; 
-			double **Bsub = new double*[dimBlock];
-	       		double **Csub = new double*[dimBlock];
+			ALIGN(64) double **Asub = new double*[dimBlock]; 
+			ALIGN(64) double **Bsub = new double*[dimBlock];
+	       		ALIGN(64) double **Csub = new double*[dimBlock];
+
+			// dublicate for tranponate Bsub
+			ALIGN(64) double  *B1D = new double[ CNST_DIM_OF_BLOCK * CNST_DIM_OF_BLOCK ];
+			ALIGN(64) double **B2D = new double*[ CNST_DIM_OF_BLOCK ];
+	
+			for(int row = 0; row < CNST_DIM_OF_BLOCK; ++row)
+			{
+				B2D[ row ] = & B1D[ row * CNST_DIM_OF_BLOCK ];
+			}
 
 			#pragma omp private(Asub, Bsub, Csub, row_max, col_max)
 			for( int J = 0; J < dimGrid; ++J  )
@@ -312,12 +421,12 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 					// Rebuild Asub, Bsub arrays of pointers to rows A,B
 					for(int row = 0; row < rc_max_AB ; ++row )
 					{
-						Asub[ row ] = &A[ I * dimBlock + row ][ K * dimBlock ];  
+						Asub[ row ] = const_cast<double *>( &A[ I * dimBlock + row ][ K * dimBlock ] );  
 					}
 
 					for(int row = 0; row < dimBlock; ++row )
 					{
-						Bsub[ row ] = &B[ K * dimBlock + row ][ J * dimBlock ];
+						Bsub[ row ] = const_cast<double *>( &B[ K * dimBlock + row ][ J * dimBlock ] );
 					}
 					
 					if( opt == NO )
@@ -325,10 +434,14 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 						// Csub[I][J] = Asub[I][K] * Bsub[K][J]
 						Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
 					}
+					else if( opt == SSE2 | opt == AVX | opt == AVX512F )
+					{
+						Asub_mul_Bsub_opt( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
+					}
 					else
 					{
 						// Csub[I][J] = Asub[I][K] * trans (Bsub[K][J])
-						Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
+						Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt, B2D);
 
 					}
 				}
@@ -338,6 +451,9 @@ void A_oper_B(double** A, double** B, double** C, int N, oper_t op = ADD, int nu
 			delete[] Asub;
 			delete[] Bsub;
 			delete[] Csub;
+
+			delete[] B1D;
+			delete[] B2D;
 		}
 
 	}
@@ -371,7 +487,10 @@ bool is_int(std::string arg)
             (argc >= 4 && std::string(argv[3]) != "print" && std::string(argv[3]) != "noprint" ) ||
             (argc >= 5 && ! is_int( argv[4] ) /* number of omp threads */) ||
 	    (argc >= 6 && std::string(argv[5]) != "no" && 
-	     		  std::string(argv[5]) != "trans" && 
+	     		  std::string(argv[5]) != "trans" &&
+			  std::string(argv[5]) != "sse2" && 
+			  std::string(argv[5]) != "avx" && 
+			  std::string(argv[5]) != "avx512f" && 
 	     		  std::string(argv[5]) != "trans+red" &&  
 			  std::string(argv[5]) != "trans+sse2" && 
 			  std::string(argv[5]) != "trans+avx" &&
@@ -386,7 +505,7 @@ Where:\n\
 \targ2 - [ add | mul ] operation by martix, is mandatory\n\
 \targ3 - [ print | noprint ], is optional, default \"print\"\n\
 \targ4 - number of threads, default 1 (you should see available hardware threads)\n\
-\targ5 - [ no | trans | trans+red | trnas+sse2 | trans+avx | trans+avx512f ] optimization, is optional, default \"no\"\n\
+\targ5 - [ no | sse2 | avx | avx512f | trans | trans+red | trnas+sse2 | trans+avx | trans+avx512f ] optimization, is optional, default \"no\"\n\
 Example:\n"
 <<argv[0]<<" 4 add\n"
 <<argv[0]<<" 5 mul print\n"
@@ -404,6 +523,9 @@ Example:\n"
         const int    arg_num_threads{ argc < 5 ? 1 : std::stoi( argv[4] ) };
 	const opt_t  arg_optimization{ argc < 6 ? NO : std::string( argv[5] ) == "trans" ? TRANS :
 						       std::string( argv[5] ) == "trans+red" ? TRANS_AND_RED :
+						       std::string( argv[5] ) == "sse2" ? SSE2 :
+						       std::string( argv[5] ) == "avx" ? AVX :
+						       std::string( argv[5] ) == "avx512f" ? AVX512F :
 						       std::string( argv[5] ) == "trans+sse2" ? TRANS_AND_SSE2 :
 						       std::string( argv[5] ) == "trans+avx" ? TRANS_AND_AVX :
 						       std::string( argv[5] ) == "trans+avx512f" ? TRANS_AND_AVX512F : NO /* defaulte no optimization */ };
@@ -421,9 +543,9 @@ Example:\n"
         //      1-ый - высчитывать псеводо-индексы 2-х мерного массива
         //      2-ой - создать доплнительный массив указателей
         //      скорее всего 2-ой будет работать быстрее, т.к. исключаются вычисления псевдо-индексов
-        double* h_A = new double[nelements];
-        double* h_B = new double[nelements];
-        double* h_C = new double[nelements];
+        ALIGN(64) double* h_A = new double[nelements];
+        ALIGN(64) double* h_B = new double[nelements];
+        ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
                 h_A[i] = i*2.1;
@@ -431,9 +553,9 @@ Example:\n"
                 h_C[i] = 0.0;
         }
 
-        double** h_matrix_A = new double*[arg_N];
-        double** h_matrix_B = new double*[arg_N];
-        double** h_matrix_C = new double*[arg_N];
+        ALIGN(64) double** h_matrix_A = new double*[arg_N];
+        ALIGN(64) double** h_matrix_B = new double*[arg_N];
+        ALIGN(64) double** h_matrix_C = new double*[arg_N];
 
         for(int i=0; i<arg_N; ++i){
                 h_matrix_A[i] = &h_A[i*arg_N];
@@ -464,7 +586,15 @@ Example:\n"
         std::cout<<"\ncomputation on CPU...\n";
 
         t[1] = omp_get_wtime();
-        A_oper_B(h_matrix_A, h_matrix_B, h_matrix_C, arg_N, arg_operation, arg_num_threads, arg_optimization);
+
+        A_oper_B( const_cast<const double **>( h_matrix_A ), 
+		  const_cast<const double **>( h_matrix_B ), 
+		  h_matrix_C, 
+		  arg_N, 
+		  arg_operation, 
+		  arg_num_threads, 
+		  arg_optimization);
+
         t[2] = omp_get_wtime();
 
         std::cout<<"\ndone\n";
@@ -484,8 +614,7 @@ Example:\n"
         // Free host memory
         delete [] h_A;
         delete [] h_B;
-		
-		delete [] h_C;
+	delete [] h_C;
 
         t[3] = omp_get_wtime();
 
