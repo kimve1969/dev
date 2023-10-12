@@ -55,121 +55,125 @@ enum opt_t
 const int CNST_DIM_OF_BLOCK = 45;
 
 // C = Sum ( A * B )
-void Asub_mul_Bsub( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB )
+void Asub_mul_Bsub( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt)
 {
 	for(int i=0; i < row_max_C ; ++i)
 	{
 		for(int k=0; k < rc_max_AB ; ++k)
 		{
-			for(int j=0; j < col_max_C ; ++j)
+			if( NO == opt)
 			{
-				C[i][j] += A[i][k] * B[k][j];
-			}
-		}
-	}
-}
-
-void Asub_mul_Bsub_opt( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt = SSE2 )
-{
-	for(int i=0; i < row_max_C ; ++i)
-	{
-		for(int k=0; k < rc_max_AB ; ++k)
-		{
-			if( opt == SSE2 )
-			{
-				// SSE vectorization
-				const int VECTOR_SIZE = 2;
-
-				ALIGN(16) __m128d a2d = _mm_set1_pd( A[i][k] );
-				//ALIGN(16) __m128d b2d;
-				//ALIGN(16) __m128d c2d;
-
-				// from 1 to pre-last steps vectorization
-				int j = 0;
-				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				for(int j=0; j < col_max_C ; ++j)
 				{
-					// B[k][j+1], B[k][j+0] -> b2d 
-					//b2d = _mm_loadu_pd( & B[k][j] );
-					// C[i][j+1], C[i][j+0] -> c2d 
-					//c2d = _mm_loadu_pd( & C[i][j] );
-					// FMA, gcc -mfma
-					//c2d = _mm_fmadd_pd( a2d, b2d, c2d );
-					// c2d -> C[i][j+1], C[i][j+0] 
-					//_mm_storeu_pd( & C[i][j], c2d );
-					_mm_storeu_pd( & C[i][j], _mm_fmadd_pd( a2d, 
-								  _mm_loadu_pd( & B[k][j] ), 
-					       		          _mm_loadu_pd( & C[i][j] )));
-
+					C[i][j] += A[i][k] * B[k][j];
 				}
-
-				// last step vectorization with check bounds rc_max_AB
-
 			}
-			else if( opt == AVX )
+			else if( SSE2 == opt )
 			{
-				// AVX vectorization
-				const int VECTOR_SIZE = 4;
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 2; // length of vector SSE2
+				// _mm_set_pd(double e1, double e0)
+				ALIGN(16) __m128d a2d = _mm_set_pd( A[i][k], A[i][k] );
 
-				ALIGN(32) __m256d a4d = _mm256_set1_pd( A[i][k] );
-				//ALIGN(32) __m256d b4d;
-				//ALIGN(32) __m256d c4d;
-
-				// from 1 to pre-last steps vectorization
-				int j = 0;
-				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				// stepa fma and vectorization
+				int steps = col_max_C / ( PSIZE * VSIZE );
+				int tail  = col_max_C % ( PSIZE * VSIZE );
+		
+				for( int j = 0 ; j < steps ; ++j)
 				{
-					// B[k][j+1], B[k][j+0] -> b2d 
-					//b4d = _mm256_loadu_pd( & B[k][j] );
-					// C[i][j+1], C[i][j+0] -> c2d 
-					//c4d = _mm256_loadu_pd( & C[i][j] );
-					// FMA, gcc -mfma
-					//c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
-					//c2d -> C[i][j+1], C[i][j+0] 
-					//_mm256_storeu_pd( & C[i][j], c4d );
-					_mm256_storeu_pd( & C[i][j], _mm256_fmadd_pd( a4d, 
-								     _mm256_loadu_pd( & B[k][j] ), 
-								      _mm256_loadu_pd( & C[i][j] )));
-					//_mm256_storeu_pd( & C[i][j+1], _mm256_fmadd_pd( a4d, 
-					//				 _mm256_loadu_pd( & B[k][j+1] ), 
-					//				 _mm256_loadu_pd( & C[i][j+1] )));
-
+					// first FMA-unit
+					int jone = (j * PSIZE + 0) * VSIZE;
+					_mm_storeu_pd( & C[i][ jone ], _mm_fmadd_pd( a2d,
+							          // load B[k][j+1], B[k][j+0]	
+								  _mm_loadu_pd( & B[k][ jone  ] ), 
+								  // load C[i][j+1], C[i][j+0]
+					       		          _mm_loadu_pd( & C[i][ jone ] )));
+					// second FMA-unit
+					int jtwo = (j * PSIZE + 1) * VSIZE;
+					_mm_storeu_pd( & C[i][ jtwo  ], _mm_fmadd_pd( a2d,
+								  // load B[k][j+3], B[k][j+2]
+								  _mm_loadu_pd( & B[k][ jtwo ] ), 
+								  // load C[i][j+3], C[i][j+2]
+  					       		          _mm_loadu_pd( & C[i][ jtwo ] )));
 				}
-				// last step vectorization with check bounds rc_max_AB
+				// processing tail
+				for( int j = steps * PSIZE * VSIZE ; tail && (j < col_max_C) ; ++j )
+				{
+					C[i][j] += A[i][k] * B[k][j];
+				}
 			}
-			else if( opt == AVX512F )
+			else if( AVX == opt )
 			{
-				// AVX512F vectorization
-				const int VECTOR_SIZE = 8;
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 4; // length of vector AVX
+				// _mm_set_pd(double e1, double e0)
+				ALIGN(32) __m256d a4d = _mm256_set_pd( A[i][k], A[i][k], A[i][k], A[i][k] );
 
-				ALIGN(64) __m512d a8d = _mm512_set1_pd( A[i][k] );
-				//ALIGN(64) __m512d b8d;
-				//ALIGN(64) __m512d c8d;
-
-				// from 1 to pre-last steps vectorization
-				int j = 0;
-				for( /* j see below */ ; j < col_max_C ; j += VECTOR_SIZE)
+				// steps fma and vectorization
+				int steps = col_max_C / ( PSIZE * VSIZE );
+				int tail  = col_max_C % ( PSIZE * VSIZE );
+		
+				for( int j = 0 ; j < steps ; ++j)
 				{
-					// B[k][j+1], B[k][j+0] -> b2d 
-					//b8d = _mm512_loadu_pd( & B[k][j] );
-					// C[i][j+1], C[i][j+0] -> c2d 
-					//c8d = _mm512_loadu_pd( & C[i][j] );
-					// FMA, gcc -mfma
-					//c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
-					// c2d -> C[i][j+1], C[i][j+0] 
-					//_mm512_storeu_pd( & C[i][j], c8d );
-					_mm512_storeu_pd( & C[i][j], _mm512_fmadd_pd( a8d, 
-								     _mm512_loadu_pd( & B[k][j] ), 
-								     _mm512_loadu_pd( & C[i][j] )));
-
+					// first FMA-unit
+					int jone = (j * PSIZE + 0) * VSIZE;
+					_mm256_storeu_pd( & C[i][ jone ], _mm256_fmadd_pd( a4d,
+							          	  // load B[k][j+1], B[k][j+0]	
+								  	  _mm256_loadu_pd( & B[k][ jone  ] ), 
+								  	  // load C[i][j+1], C[i][j+0]
+					       		          	  _mm256_loadu_pd( & C[i][ jone ] )));
+					// second FMA-unit
+					int jtwo = (j * PSIZE + 1) * VSIZE;
+					_mm256_storeu_pd( & C[i][ jtwo  ], _mm256_fmadd_pd( a4d,
+								  	  // load B[k][j+3], B[k][j+2]
+								  	  _mm256_loadu_pd( & B[k][ jtwo ] ), 
+								  	  // load C[i][j+3], C[i][j+2]
+  					       		          	  _mm256_loadu_pd( & C[i][ jtwo ] )));
 				}
+				// processing tail
+				for( int j = steps * PSIZE * VSIZE ; tail && (j < col_max_C) ; ++j )
+				{
+					C[i][j] += A[i][k] * B[k][j];
+				}
+			}
+			else if( AVX512F == opt )
+			{
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 8; // length of vector AVX512F
+				// _mm_set_pd(double e7, ..., double e0)
+				ALIGN(64) __m512d a8d = _mm512_set_pd( A[i][k], A[i][k], A[i][k], A[i][k], A[i][k], A[i][k], A[i][k], A[i][k] );
 
-				// last step vectorization with check bounds rc_max_AB
+				// steps fma and vectorization
+				int steps = col_max_C / ( PSIZE * VSIZE );
+				int tail  = col_max_C % ( PSIZE * VSIZE );
+		
+				for( int j = 0 ; j < steps ; ++j)
+				{
+					// first FMA-unit
+					int jone = (j * PSIZE + 0) * VSIZE;
+					_mm512_storeu_pd( & C[i][ jone ], _mm512_fmadd_pd( a8d,
+							          	  // load B[k][j+1], B[k][j+0]	
+								  	  _mm512_loadu_pd( & B[k][ jone  ] ), 
+								  	  // load C[i][j+1], C[i][j+0]
+					       		          	  _mm512_loadu_pd( & C[i][ jone ] )));
+					// second FMA-unit
+					int jtwo = (j * PSIZE + 1) * VSIZE;
+					_mm512_storeu_pd( & C[i][ jtwo  ], _mm512_fmadd_pd( a8d,
+								  	  // load B[k][j+3], B[k][j+2]
+								  	  _mm512_loadu_pd( & B[k][ jtwo ] ), 
+								  	  // load C[i][j+3], C[i][j+2]
+  					       		          	  _mm512_loadu_pd( & C[i][ jtwo ] )));
+				}
+				// processing tail
+				for( int j = steps * PSIZE * VSIZE ; tail && (j < col_max_C) ; ++j )
+				{
+					C[i][j] += A[i][k] * B[k][j];
+				}
 			}
 			else
 			{
-				assert(false);
+				assert( false && "Unknown type of optimization!" );
 			}
-
 		}
 	}
 }
@@ -200,141 +204,128 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 				}
 				C[i][j] += sum;
 			}
-			else if( opt == TRANS_AND_RED )
-			{
-				// optimization for out-of-order pipepline
-				const int PIPELINE = 4;
-				ALIGN(64) double sum[PIPELINE]{0.0, 0.0, 0.0, 0.0};
-
-				// reduction from 1 to pre-last step
-				int k = 0;
-				for( /*k see above*/ ; k < (rc_max_AB - PIPELINE) ; k += PIPELINE)
-				{
-					// out-of-order pipeline
-					for(int p=0; p<PIPELINE; ++p)
-					{
-						sum[p] += A[i][k+p] * B2D[j][k+p];
-					}
-				}
-
-				// last step, out-of-order pipeline
-				for(int p=0; p < PIPELINE; ++p)
-				{
-					(k+p < rc_max_AB) ? sum[p] += A[i][k+p] * B2D[j][k+p] : 0.0;
-				}
-
-				double agr_sum{0};
-				for(int p=0; p < PIPELINE; ++p)
-				{
-					agr_sum += sum[p];
-				}
-				C[i][j] += agr_sum;
-			}
 			else if ( opt == TRANS_AND_SSE2 )
 			{
-				// SSE vectorization
-				const int VECTOR_SIZE = 2;
-                        
-				ALIGN(64) __m128d c2d = _mm_set_pd(0.0, 0.0);
-				ALIGN(64) __m128d a2d;
-				ALIGN(64) __m128d b2d;
-			
-				// from 1 to pre-last steps vectorization
-				int k = 0;
-				for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
-				{
-					// __m128d _mm_set_pd( double e1, double e0 )
-					a2d = _mm_set_pd( A[i][k+1], A[i][k+0] );
-					b2d = _mm_set_pd( B2D[j][k+1], B2D[j][k+0] );
-					// FMA, gcc -mfma
-					c2d = _mm_fmadd_pd( a2d, b2d, c2d );
-				}
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 2; // length of vector SSE2
+				ALIGN(16) __m128d c2d_one = _mm_setzero_pd();
+				ALIGN(16) __m128d c2d_two = _mm_setzero_pd();
 
-				// last step vectorization with check bounds rc_max_AB
-				a2d = _mm_set_pd( (k+1 < rc_max_AB ? A[i][k+1] : 0) , (k+0 < rc_max_AB ? A[i][k+0] : 0) );
-				b2d = _mm_set_pd( (k+1 < rc_max_AB ? B2D[j][k+1] : 0) , (k+0 < rc_max_AB ? B2D[j][k+0] : 0) );
-				c2d = _mm_fmadd_pd( a2d, b2d, c2d );
- 
-				C[i][j] += ((double*)(&c2d))[1] + ((double*)(&c2d))[0];
+				// steps fma and vectorization
+				int steps = rc_max_AB / ( PSIZE * VSIZE );
+				int tail  = rc_max_AB % ( PSIZE * VSIZE );
+		
+				for( int k = 0 ; k < steps ; ++k)
+				{
+					// first FMA-unit
+					int kone = (k * PSIZE + 0) * VSIZE;
+					//			     load A[i][k+1], A[i][k+0]
+					c2d_one =  _mm_fmadd_pd( _mm_loadu_pd( & A[i][ kone ] ),
+							          // load B2D[j][k+1], B2D[j][k+0]	
+								  _mm_loadu_pd( & B2D[j][ kone ] ), 
+					       		          c2d_one );
+					// second FMA-unit
+					int ktwo = (k * PSIZE + 1) * VSIZE;
+					//			    load A[i][k+3], A[i][k+2]
+					c2d_two =  _mm_fmadd_pd( _mm_loadu_pd( &A[i][ ktwo ]  ),
+						   	         // load B2D[j][k+3], B2D[j][k+2]
+								 _mm_loadu_pd( & B2D[j][ ktwo ] ), 
+  					       		         c2d_two);
+				}
+				// processing tail
+				double sum{0};
+				for( int k = steps * PSIZE * VSIZE ; tail && (k < rc_max_AB) ; ++k )
+				{
+					sum += A[i][k] * B2D[j][k];
+				}
+				// gather sum 
+				sum += ((double*)(&c2d_one))[1] + ((double*)(&c2d_one))[0] +
+				       ((double*)(&c2d_two))[1] + ((double*)(&c2d_two))[0];
+				C[i][j] += sum;
+
 			}
 			else if( opt == TRANS_AND_AVX )
 			{
-				// AVX, gcc -mavx
-				const int VECTOR_SIZE = 4;
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 4; // length of vector AVX
+				ALIGN(32) __m256d c4d_one = _mm256_setzero_pd();
+				ALIGN(32) __m256d c4d_two = _mm256_setzero_pd();
 
-				ALIGN(64) __m256d c4d = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-				ALIGN(64) __m256d a4d;
-				ALIGN(64) __m256d b4d;
-
-				// from 1 to pre-last steps vectorization
-				int k = 0;
-				for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
+				// steps fma and vectorization
+				int steps = rc_max_AB / ( PSIZE * VSIZE );
+				int tail  = rc_max_AB % ( PSIZE * VSIZE );
+		
+				for( int k = 0 ; k < steps ; ++k)
 				{
-					// _m256d _mm256_set_pd( double e3, double e2, double e1, double e0 )
-					a4d = _mm256_set_pd( A[i][k+3], A[i][k+2], A[i][k+1], A[i][k+0] );
-                                	b4d = _mm256_set_pd( B2D[j][k+3], B2D[j][k+2], B2D[j][k+1], B2D[j][k+0] );
-					c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
+					// first FMA-unit
+					int kone = (k * PSIZE + 0) * VSIZE;
+					//			     load A[i][k+1], A[i][k+0]
+					c4d_one =  _mm256_fmadd_pd( _mm256_loadu_pd( & A[i][ kone ] ),
+							            // load B2D[j][k+1], B2D[j][k+0]	
+								    _mm256_loadu_pd( & B2D[j][ kone ] ), 
+					       		            c4d_one );
+					// second FMA-unit
+					int ktwo = (k * PSIZE + 1) * VSIZE;
+					//			    load A[i][k+3], A[i][k+2]
+					c4d_two =  _mm256_fmadd_pd( _mm256_loadu_pd( &A[i][ ktwo ]  ),
+						   	            // load B2D[j][k+3], B2D[j][k+2]
+								    _mm256_loadu_pd( & B2D[j][ ktwo ] ), 
+  					       		            c4d_two);
 				}
+				// processing tail
+				double sum{0};
+				for( int k = steps * PSIZE * VSIZE ; tail && (k < rc_max_AB) ; ++k )
+				{
+					sum += A[i][k] * B2D[j][k];
+				}
+				// gather sum 
+				sum += ((double*)(&c4d_one))[3] + ((double*)(&c4d_one))[2] + ((double*)(&c4d_one))[1] + ((double*)(&c4d_one))[0] +
+				       ((double*)(&c4d_two))[3] + ((double*)(&c4d_two))[3] + ((double*)(&c4d_two))[1] + ((double*)(&c4d_two))[0];
 
-				// last step vectorization with check bounds rc_max_AB
-				a4d = _mm256_set_pd(    (k+3 < rc_max_AB ? A[i][k+3] : 0),
-							(k+2 < rc_max_AB ? A[i][k+2] : 0),
-							(k+1 < rc_max_AB ? A[i][k+1] : 0),
-							(k+0 < rc_max_AB ? A[i][k+0] : 0));
-
-				b4d = _mm256_set_pd(    (k+3 < rc_max_AB ? B2D[j][k+3] : 0),
-							(k+2 < rc_max_AB ? B2D[j][k+2] : 0),
-							(k+1 < rc_max_AB ? B2D[j][k+1] : 0),
-							(k+0 < rc_max_AB ? B2D[j][k+0] : 0) );
-
-				c4d = _mm256_fmadd_pd( a4d, b4d, c4d );
-
-				C[i][j] += ((double*)(&c4d))[3] +  ((double*)(&c4d))[2] +  ((double*)(&c4d))[1] +  ((double*)(&c4d))[0];
+				C[i][j] += sum;
 			}
 			else if( opt == TRANS_AND_AVX512F )
 			{
-				// AVX512F, gcc -mavx512f
-				const int VECTOR_SIZE = 8;
+				const int PSIZE = 2; // each core has 2 FMA-units
+				const int VSIZE = 8; // length of vector AVX512F
+				// _mm_set_pd(double e1, double e0)
+				ALIGN(64) __m512d c8d_one = _mm512_setzero_pd();
+				ALIGN(64) __m512d c8d_two = _mm512_setzero_pd();
 
-				ALIGN(64) __m512d c8d = _mm512_set_pd(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-				ALIGN(64) __m512d a8d;
-				ALIGN(64) __m512d b8d;
-
-				// from 1 to pre-last steps vectorization
-				int k = 0;
-				for( /*k see above*/ ; k < (rc_max_AB - VECTOR_SIZE) ; k += VECTOR_SIZE)
+				// steps fma and vectorization
+				int steps = rc_max_AB / ( PSIZE * VSIZE );
+				int tail  = rc_max_AB % ( PSIZE * VSIZE );
+		
+				for( int k = 0 ; k < steps ; ++k)
 				{
-					// _m512d _mm512_set_pd( double e7, double e6, ... , double e0 )
-					a8d = _mm512_set_pd( A[i][k+7], A[i][k+6], A[i][k+5], A[i][k+4], 
-							     A[i][k+3], A[i][k+2], A[i][k+1], A[i][k+0] );
-                                	b8d = _mm512_set_pd( B2D[j][k+7], B2D[j][k+6], B2D[j][k+5], B2D[j][k+4],
-						       	     B2D[j][k+3], B2D[j][k+2], B2D[j][k+1], B2D[j][k+0] );
-					c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
+					// first FMA-unit
+					int kone = (k * PSIZE + 0) * VSIZE;
+					//			     load A[i][k+1], A[i][k+0]
+					c8d_one =  _mm512_fmadd_pd( _mm512_loadu_pd( & A[i][ kone ] ),
+							            // load B2D[j][k+1], B2D[j][k+0]	
+								    _mm512_loadu_pd( & B2D[j][ kone ] ), 
+					       		            c8d_one );
+					// second FMA-unit
+					int ktwo = (k * PSIZE + 1) * VSIZE;
+					//			    load A[i][k+3], A[i][k+2]
+					c8d_two =  _mm512_fmadd_pd( _mm512_loadu_pd( &A[i][ ktwo ]  ),
+						   	            // load B2D[j][k+3], B2D[j][k+2]
+								    _mm512_loadu_pd( & B2D[j][ ktwo ] ), 
+  					       		            c8d_two);
 				}
+				// processing tail
+				double sum{0};
+				for( int k = steps * PSIZE * VSIZE ; tail && (k < rc_max_AB) ; ++k )
+				{
+					sum += A[i][k] * B2D[j][k];
+				}
+				// gather sum 
+				sum += ((double*)(&c8d_one))[7] + ((double*)(&c8d_one))[6] + ((double*)(&c8d_one))[5] + ((double*)(&c8d_one))[4] +
+				       ((double*)(&c8d_one))[3] + ((double*)(&c8d_one))[2] + ((double*)(&c8d_one))[1] + ((double*)(&c8d_one))[0] +
+				       ((double*)(&c8d_two))[7] + ((double*)(&c8d_two))[6] + ((double*)(&c8d_two))[5] + ((double*)(&c8d_two))[4];
+				       ((double*)(&c8d_two))[3] + ((double*)(&c8d_two))[3] + ((double*)(&c8d_two))[1] + ((double*)(&c8d_two))[0];
 
-				// last step vectorization with check bounds rc_max_AB
-				a8d = _mm512_set_pd(    (k+7 < rc_max_AB ? A[i][k+7] : 0),
-							(k+6 < rc_max_AB ? A[i][k+6] : 0),
-							(k+5 < rc_max_AB ? A[i][k+5] : 0),
-							(k+4 < rc_max_AB ? A[i][k+4] : 0),
-							(k+3 < rc_max_AB ? A[i][k+3] : 0),
-							(k+2 < rc_max_AB ? A[i][k+2] : 0),
-							(k+1 < rc_max_AB ? A[i][k+1] : 0),
-							(k+0 < rc_max_AB ? A[i][k+0] : 0));
-
-				b8d = _mm512_set_pd(    (k+7 < rc_max_AB ? B2D[j][k+7] : 0),
-							(k+6 < rc_max_AB ? B2D[j][k+6] : 0),
-							(k+5 < rc_max_AB ? B2D[j][k+5] : 0),
-							(k+4 < rc_max_AB ? B2D[j][k+4] : 0),
-							(k+3 < rc_max_AB ? B2D[j][k+3] : 0),
-							(k+2 < rc_max_AB ? B2D[j][k+2] : 0),
-							(k+1 < rc_max_AB ? B2D[j][k+1] : 0),
-							(k+0 < rc_max_AB ? B2D[j][k+0] : 0) );
-
-				c8d = _mm512_fmadd_pd( a8d, b8d, c8d );
-
-				C[i][j] += ((double*)(&c8d))[7] +  ((double*)(&c8d))[6] +  ((double*)(&c8d))[5] +  ((double*)(&c8d))[4] +
-					   ((double*)(&c8d))[3] +  ((double*)(&c8d))[2] +  ((double*)(&c8d))[1] +  ((double*)(&c8d))[0];
+				C[i][j] += sum;
 			}
 			else
 			{
@@ -428,21 +419,21 @@ void A_oper_B(const double* const * A, const double* const* B, double* const * C
 					{
 						Bsub[ row ] = const_cast<double *>( &B[ K * dimBlock + row ][ J * dimBlock ] );
 					}
-					
-					if( opt == NO )
+				
+					// Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
+					if( NO == opt || SSE2 == opt || AVX == opt || AVX512F == opt )
 					{
 						// Csub[I][J] = Asub[I][K] * Bsub[K][J]
-						Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB);
+						Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
 					}
-					else if( opt == SSE2 | opt == AVX | opt == AVX512F )
-					{
-						Asub_mul_Bsub_opt( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
-					}
-					else
+					else if( TRANS == opt || TRANS_AND_RED == opt || TRANS_AND_SSE2 == opt || TRANS_AND_AVX == opt || TRANS_AND_AVX512F == opt )
 					{
 						// Csub[I][J] = Asub[I][K] * trans (Bsub[K][J])
 						Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt, B2D);
-
+					}
+					else
+					{
+						assert( false && "Unknown type of optimization!"  );
 					}
 				}
 
@@ -487,11 +478,10 @@ bool is_int(std::string arg)
             (argc >= 4 && std::string(argv[3]) != "print" && std::string(argv[3]) != "noprint" ) ||
             (argc >= 5 && ! is_int( argv[4] ) /* number of omp threads */) ||
 	    (argc >= 6 && std::string(argv[5]) != "no" && 
-	     		  std::string(argv[5]) != "trans" &&
-			  std::string(argv[5]) != "sse2" && 
+  			  std::string(argv[5]) != "sse2" && 
 			  std::string(argv[5]) != "avx" && 
-			  std::string(argv[5]) != "avx512f" && 
-	     		  std::string(argv[5]) != "trans+red" &&  
+			  std::string(argv[5]) != "avx512f" &&
+			  std::string(argv[5]) != "trans" &&
 			  std::string(argv[5]) != "trans+sse2" && 
 			  std::string(argv[5]) != "trans+avx" &&
 			  std::string(argv[5]) != "trans+avx512f" ) 
@@ -505,12 +495,13 @@ Where:\n\
 \targ2 - [ add | mul ] operation by martix, is mandatory\n\
 \targ3 - [ print | noprint ], is optional, default \"print\"\n\
 \targ4 - number of threads, default 1 (you should see available hardware threads)\n\
-\targ5 - [ no | sse2 | avx | avx512f | trans | trans+red | trnas+sse2 | trans+avx | trans+avx512f ] optimization, is optional, default \"no\"\n\
+\targ5 - [ no | sse2 | avx | avx512f | trans | trnas+sse2 | trans+avx | trans+avx512f ] optimization, is optional, default \"no\"\n\
 Example:\n"
 <<argv[0]<<" 4 add\n"
 <<argv[0]<<" 5 mul print\n"
 <<argv[0]<<" 1000 mul noprint\n"
 <<argv[0]<<" 1000 mul noprint 2\n"
+<<argv[0]<<" 1000 mul noprint 1 sse2\n"
 <<argv[0]<<" 1000 mul noprint 8 trans\n"
 <<argv[0]<<" 1000 mul noprint 8 trans+sse2\n"
 <<"\nEnd\n";
@@ -521,11 +512,11 @@ Example:\n"
         const oper_t arg_operation{ std::string( argv[2] ) == "add" ? ADD : MUL };
         const prn_t  arg_print{ argc < 4 ? NOPRINT : std::string( argv[3] ) == "print" ? PRINT : NOPRINT /* default print */};
         const int    arg_num_threads{ argc < 5 ? 1 : std::stoi( argv[4] ) };
-	const opt_t  arg_optimization{ argc < 6 ? NO : std::string( argv[5] ) == "trans" ? TRANS :
-						       std::string( argv[5] ) == "trans+red" ? TRANS_AND_RED :
-						       std::string( argv[5] ) == "sse2" ? SSE2 :
+	const opt_t  arg_optimization{ argc < 6 ? NO : std::string( argv[5] ) == "no" ? NO :
+ 					 	       std::string( argv[5] ) == "sse2" ? SSE2 :
 						       std::string( argv[5] ) == "avx" ? AVX :
 						       std::string( argv[5] ) == "avx512f" ? AVX512F :
+						       std::string( argv[5] ) == "trans" ? TRANS :
 						       std::string( argv[5] ) == "trans+sse2" ? TRANS_AND_SSE2 :
 						       std::string( argv[5] ) == "trans+avx" ? TRANS_AND_AVX :
 						       std::string( argv[5] ) == "trans+avx512f" ? TRANS_AND_AVX512F : NO /* defaulte no optimization */ };

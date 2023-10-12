@@ -1,6 +1,6 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
 OPT=-O3
-DIM=1000
+DIM=2000
 NCORE=8
 #skylake, broadwell, haswell, ivybridge, x86-64
 ARCH=-march=x86-64 -fPIC
@@ -26,10 +26,7 @@ test:
 	@echo '************************************'
 	./cpu-block $(DIM) mul noprint $(NCORE) avx512f
 	@echo '************************************'
-ttt:
 	./cpu-block $(DIM) mul noprint $(NCORE) trans
-	@echo '************************************'
-	./cpu-block $(DIM) mul noprint $(NCORE) trans+red
 	@echo '************************************'
 	./cpu-block $(DIM) mul noprint $(NCORE) trans+sse2
 	@echo '************************************'
