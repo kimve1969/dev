@@ -11,6 +11,7 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<stdexcept>
 #include<omp.h>
 #include<thread>
+#include<iomanip>
 
 #ifdef __GNUC__
         #define ALIGN(N) __attribute__((aligned(N)))    // Linux
@@ -30,6 +31,20 @@ enum prn_t
         PRINT,
         NOPRINT
 } _prn_t;
+
+// A[M][N]
+double norma(const double* const * A, int M, int N)
+{
+	double sum{0};
+	for(int m = 0; m < M; ++m)
+	{
+		for(int n = 0; n < N; ++n)
+		{
+			sum += A[m][n];
+		}
+	}
+	return sum;
+}
 
 void A_oper_B(const double* const * A, const double* const * B, double* const * C, int N, oper_t op = ADD, int num_omp_threads = 1){
 
@@ -175,26 +190,23 @@ Example:\n"
 
         prn("\n\n|C|:\n\n", h_matrix_C, arg_N);
 
-        // check last element ...
-        auto prn_check = [&](int i, int j)
-        {
-                std::cout<<"C[ "<<i<<" ][ "<<j<<" ] = "<<h_matrix_C[i][j]<<"\n";
-        };
-
-        std::cout<<"\nCheck results:\n";
-        prn_check(0, 1);
-        prn_check(arg_N-1, arg_N-1);
+	// check norma
+	double norma_C = norma( h_matrix_C, arg_N, arg_N);
+	std::cout<<"Norma |C| = "<<std::setprecision(15)<<norma_C<<"\n";
 
         // Free host memory
-        delete [] h_A;
-        delete [] h_B;
-		
-		delete [] h_C;
+	delete[] h_matrix_A;
+	delete[] h_matrix_B;
+	delete[] h_matrix_C;
+
+        delete[] h_A;
+        delete[] h_B;	
+	delete[] h_C;
 
         t[3] = omp_get_wtime();
 
 	double gflops = ( 2 * (double)arg_N * (double)arg_N * (double)arg_N ) / ( t[2] - t[1] ) / 1'000'000'000.0;
-        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
+        std::cout<<std::setprecision(3)<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
 
         std::cout<<"End\n"<<std::endl;
 

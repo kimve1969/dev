@@ -1,7 +1,7 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
 OPT=-O3
 DIM=2000
-NCORE=8
+NCORE=4
 #skylake, broadwell, haswell, ivybridge, x86-64
 ARCH=-march=x86-64 -fPIC
 
@@ -54,4 +54,7 @@ gpu01:
 	nvcc gpu01.cu -o gpu01 -std=c++17 -lstdc++ -lcudart  -Xcompiler=-fopenmp 
 	#для вызова метематических функций в кернеле нужно указывать флаг компилятора: --expt-relaxed-constexpr
 	./gpu01
-
+a2b:
+	gcc a2b.cpp -o a2b -lstdc++ -mavx -std=c++17
+	./a2b
+	rm a2b

@@ -13,7 +13,7 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<omp.h>
 #include<thread>
 #include<cmath>
-
+#include<iomanip>
 #include<emmintrin.h>
 #include<immintrin.h>
 
@@ -47,6 +47,20 @@ enum opt_t
 	TRANS_AND_AVX,
 	TRANS_AND_AVX512F
 } _opt_t;
+
+// A[M][N]
+double norma(const double* const * A, int M, int N)
+{
+	double sum{0};
+	for(int m = 0; m < M; ++m)
+	{
+		for(int n = 0; n < N; ++n)
+		{
+			sum += A[m][n];
+		}
+	}
+	return sum;
+}
 
 // L1-cash is 32678 byte = 4096 double
 // IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
@@ -189,7 +203,65 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 			B2D[j][k] = B[k][j];
 		}
 	}
+/*	
+	__m256d b0, b1, b2, b3;
+	__m256d tb0, tb1, tb2, tb3;
 
+	const int VSIZE = 4;
+
+	int Ksteps = rc_max_AB / VSIZE;
+	int Ktail  = rc_max_AB % VSIZE;
+
+	int Jsteps = col_max_C / VSIZE;
+	int Jtail  = col_max_C % VSIZE;
+
+	for(int k = 0; k < Ksteps; ++k)
+	{
+		for(int j = 0; j < Jsteps; ++j)
+		{
+			// load
+			b0 = _mm256_loadu_pd( & B[ j * VSIZE + 0][ k * VSIZE ] );
+			b1 = _mm256_loadu_pd( & B[ j * VSIZE + 1][ k * VSIZE ] );
+			b2 = _mm256_loadu_pd( & B[ j * VSIZE + 2][ k * VSIZE ] );
+			b3 = _mm256_loadu_pd( & B[ j * VSIZE + 3][ k * VSIZE ] );
+			// transponation
+			// _mm256_set_pd(double e3, ..., double e0)
+			tb0 = _mm256_set_pd( ((double*)(&b3))[0], ((double*)(&b2))[0], ((double*)(&b1))[0], ((double*)(&b0))[0] );
+			tb1 = _mm256_set_pd( ((double*)(&b3))[1], ((double*)(&b2))[1], ((double*)(&b1))[1], ((double*)(&b0))[1] );
+			tb2 = _mm256_set_pd( ((double*)(&b3))[2], ((double*)(&b2))[2], ((double*)(&b1))[2], ((double*)(&b0))[2] );
+			tb3 = _mm256_set_pd( ((double*)(&b3))[3], ((double*)(&b2))[3], ((double*)(&b1))[3], ((double*)(&b0))[3] );
+			// store
+			_mm256_storeu_pd( & B2D[ k * VSIZE + 0][ j * VSIZE ], tb0 );
+			_mm256_storeu_pd( & B2D[ k * VSIZE + 1][ j * VSIZE ], tb1 );
+			_mm256_storeu_pd( & B2D[ k * VSIZE + 2][ j * VSIZE ], tb2 );
+			_mm256_storeu_pd( & B2D[ k * VSIZE + 3][ j * VSIZE ], tb3 );
+		}
+	}
+
+	for(int k = Ksteps * VSIZE; Ktail && (k < rc_max_AB) ; ++k)
+	{
+		for(int j = 0; j < Jsteps * VSIZE ; ++j)
+		{
+			B2D[j][k] = B[k][j];
+		}
+	}
+
+	for(int j = Jsteps * VSIZE; Jtail && (j < col_max_C) ; ++j)
+	{
+		for(int k = 0; k < Ksteps * VSIZE ; ++k)
+		{
+			B2D[j][k] = B[k][j];
+		}
+	}
+
+	for(int k = Ksteps * VSIZE; Ktail && (k < rc_max_AB); ++k)
+	{
+		for (int j = Jsteps * VSIZE; Jtail && (j < col_max_C); ++j )
+		{
+			B2D[j][k] = B[k][j];
+		}
+	}
+*/
 	// C[i][j] = Sum ( A[i][k] * B[k][j] ) = Sum( A[i][k] * B2D[j][k] )
 	for(int i=0; i < row_max_C ; ++i)
 	{
@@ -280,7 +352,7 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 				}
 				// gather sum 
 				sum += ((double*)(&c4d_one))[3] + ((double*)(&c4d_one))[2] + ((double*)(&c4d_one))[1] + ((double*)(&c4d_one))[0] +
-				       ((double*)(&c4d_two))[3] + ((double*)(&c4d_two))[3] + ((double*)(&c4d_two))[1] + ((double*)(&c4d_two))[0];
+				       ((double*)(&c4d_two))[3] + ((double*)(&c4d_two))[2] + ((double*)(&c4d_two))[1] + ((double*)(&c4d_two))[0];
 
 				C[i][j] += sum;
 			}
@@ -322,8 +394,8 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 				// gather sum 
 				sum += ((double*)(&c8d_one))[7] + ((double*)(&c8d_one))[6] + ((double*)(&c8d_one))[5] + ((double*)(&c8d_one))[4] +
 				       ((double*)(&c8d_one))[3] + ((double*)(&c8d_one))[2] + ((double*)(&c8d_one))[1] + ((double*)(&c8d_one))[0] +
-				       ((double*)(&c8d_two))[7] + ((double*)(&c8d_two))[6] + ((double*)(&c8d_two))[5] + ((double*)(&c8d_two))[4];
-				       ((double*)(&c8d_two))[3] + ((double*)(&c8d_two))[3] + ((double*)(&c8d_two))[1] + ((double*)(&c8d_two))[0];
+				       ((double*)(&c8d_two))[7] + ((double*)(&c8d_two))[6] + ((double*)(&c8d_two))[5] + ((double*)(&c8d_two))[4] + 
+				       ((double*)(&c8d_two))[3] + ((double*)(&c8d_two))[2] + ((double*)(&c8d_two))[1] + ((double*)(&c8d_two))[0];
 
 				C[i][j] += sum;
 			}
@@ -526,7 +598,6 @@ Example:\n"
         t[0] = omp_get_wtime();
 
 	long nelements = arg_N * arg_N;
-        std::cout<<"number elements: "<<nelements<<std::endl;
 
         // 2-х мерный массив в виде массива указателей на одномерный массив, т.к.
         // потом в пакетах BLAS или cuBLAS потребуется передавать именно НЕПРЕРЫВНЫЕ массивы
@@ -589,20 +660,16 @@ Example:\n"
         t[2] = omp_get_wtime();
 
         std::cout<<"\ndone\n";
-
         prn("\n\n|C|:\n\n", h_matrix_C, arg_N);
 
-        // check last element ...
-        auto prn_check = [&](int i, int j)
-        {
-                std::cout<<"C[ "<<i<<" ][ "<<j<<" ] = "<<h_matrix_C[i][j]<<"\n";
-        };
-
-        std::cout<<"\nCheck results:\n";
-        prn_check(0, 1);
-        prn_check(arg_N-1, arg_N-1);
-
+	// check norma
+	double norma_C = norma( h_matrix_C, arg_N, arg_N);
+	std::cout<<"Norma |C| = "<<std::setprecision(15)<<norma_C<<"\n";
         // Free host memory
+	delete [] h_matrix_A;
+	delete [] h_matrix_B;
+	delete [] h_matrix_C;
+
         delete [] h_A;
         delete [] h_B;
 	delete [] h_C;
@@ -610,7 +677,7 @@ Example:\n"
         t[3] = omp_get_wtime();
 
 	double gflops = ( 2 * (double)arg_N * (double)arg_N * (double)arg_N ) / ( t[2] - t[1] ) / 1'000'000'000.0;
-        std::cout<<"\nOMP calculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
+        std::cout<<std::setprecision(3)<<"\nCalculation time: "<<(t[2]-t[1])<<" sec., GFLOPS = "<<gflops<<"\n";
 
         std::cout<<"End\n"<<std::endl;
 
