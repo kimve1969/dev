@@ -66,7 +66,7 @@ double norma(const double* const * A, int M, int N)
 // IF 3 sub-matrixes * 1365 double, each of 3 matrix is 36x36 double
 // IF 2 sub-matrixes * 2048 double, each of 2 matrix is 45x45 double
 // IF 1 sub-matrixes * 4096 double, 1 matrix is 64x64 double
-const int CNST_DIM_OF_BLOCK = 45;
+const int CNST_DIM_OF_BLOCK = 48;
 
 // C = Sum ( A * B )
 void Asub_mul_Bsub( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt)
@@ -196,72 +196,52 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 			 int row_max_C, int col_max_C, int rc_max_AB, opt_t opt, double* const * B2D /* transpon(B) */ )
 {
 	// copy from B[k][j] to B2D[j][k], B = trans( B2D )
-	for(int k = 0; k < rc_max_AB; ++k)
+	const int CNST_VEC_AVX = 4;
+	assert(CNST_DIM_OF_BLOCK % CNST_VEC_AVX == 0 && "CNST_DIM_OF_BLOCK % CNST_VEC_AVX != 0");
+	
+	if( !(row_max_C == CNST_DIM_OF_BLOCK && col_max_C == CNST_DIM_OF_BLOCK && rc_max_AB == CNST_DIM_OF_BLOCK) /* small-size and tail-size A,B,C */ )
 	{
-		for(int j = 0; j < col_max_C; ++j)
+		for(int k = 0; k < rc_max_AB; ++k)
 		{
-			B2D[j][k] = B[k][j];
+			for(int j = 0; j < col_max_C; ++j)
+			{
+				B2D[j][k] = B[k][j];
+			}
 		}
 	}
-/*	
-	__m256d b0, b1, b2, b3;
-	__m256d tb0, tb1, tb2, tb3;
-
-	const int VSIZE = 4;
-
-	int Ksteps = rc_max_AB / VSIZE;
-	int Ktail  = rc_max_AB % VSIZE;
-
-	int Jsteps = col_max_C / VSIZE;
-	int Jtail  = col_max_C % VSIZE;
-
-	for(int k = 0; k < Ksteps; ++k)
+	else // processing full size A,B,C
 	{
-		for(int j = 0; j < Jsteps; ++j)
+		__m256d b0, b1, b2, b3;
+		__m256d tb0, tb1, tb2, tb3;
+
+		int steps = CNST_DIM_OF_BLOCK / CNST_VEC_AVX;
+
+		for(int k = 0; k < steps; ++k)
 		{
-			// load
-			b0 = _mm256_loadu_pd( & B[ j * VSIZE + 0][ k * VSIZE ] );
-			b1 = _mm256_loadu_pd( & B[ j * VSIZE + 1][ k * VSIZE ] );
-			b2 = _mm256_loadu_pd( & B[ j * VSIZE + 2][ k * VSIZE ] );
-			b3 = _mm256_loadu_pd( & B[ j * VSIZE + 3][ k * VSIZE ] );
-			// transponation
-			// _mm256_set_pd(double e3, ..., double e0)
-			tb0 = _mm256_set_pd( ((double*)(&b3))[0], ((double*)(&b2))[0], ((double*)(&b1))[0], ((double*)(&b0))[0] );
-			tb1 = _mm256_set_pd( ((double*)(&b3))[1], ((double*)(&b2))[1], ((double*)(&b1))[1], ((double*)(&b0))[1] );
-			tb2 = _mm256_set_pd( ((double*)(&b3))[2], ((double*)(&b2))[2], ((double*)(&b1))[2], ((double*)(&b0))[2] );
-			tb3 = _mm256_set_pd( ((double*)(&b3))[3], ((double*)(&b2))[3], ((double*)(&b1))[3], ((double*)(&b0))[3] );
-			// store
-			_mm256_storeu_pd( & B2D[ k * VSIZE + 0][ j * VSIZE ], tb0 );
-			_mm256_storeu_pd( & B2D[ k * VSIZE + 1][ j * VSIZE ], tb1 );
-			_mm256_storeu_pd( & B2D[ k * VSIZE + 2][ j * VSIZE ], tb2 );
-			_mm256_storeu_pd( & B2D[ k * VSIZE + 3][ j * VSIZE ], tb3 );
+			int kindx = k * CNST_VEC_AVX;
+			for(int j = 0; j < steps; ++j)
+			{
+				int jindx = j * CNST_VEC_AVX;
+				// load
+				b0 = _mm256_loadu_pd( & B[ jindx + 0][ kindx ] );
+				b1 = _mm256_loadu_pd( & B[ jindx + 1][ kindx ] );
+				b2 = _mm256_loadu_pd( & B[ jindx + 2][ kindx ] );
+				b3 = _mm256_loadu_pd( & B[ jindx + 3][ kindx ] );
+				// transponation
+				// _mm256_set_pd(double e3, ..., double e0)
+				tb0 = _mm256_set_pd( ((double*)(&b3))[0], ((double*)(&b2))[0], ((double*)(&b1))[0], ((double*)(&b0))[0] );
+				tb1 = _mm256_set_pd( ((double*)(&b3))[1], ((double*)(&b2))[1], ((double*)(&b1))[1], ((double*)(&b0))[1] );
+				tb2 = _mm256_set_pd( ((double*)(&b3))[2], ((double*)(&b2))[2], ((double*)(&b1))[2], ((double*)(&b0))[2] );
+				tb3 = _mm256_set_pd( ((double*)(&b3))[3], ((double*)(&b2))[3], ((double*)(&b1))[3], ((double*)(&b0))[3] );
+				// store
+				_mm256_storeu_pd( & B2D[ kindx + 0][ jindx ], tb0 );
+				_mm256_storeu_pd( & B2D[ kindx + 1][ jindx ], tb1 );
+				_mm256_storeu_pd( & B2D[ kindx + 2][ jindx ], tb2 );
+				_mm256_storeu_pd( & B2D[ kindx + 3][ jindx ], tb3 );
+			}
 		}
 	}
-
-	for(int k = Ksteps * VSIZE; Ktail && (k < rc_max_AB) ; ++k)
-	{
-		for(int j = 0; j < Jsteps * VSIZE ; ++j)
-		{
-			B2D[j][k] = B[k][j];
-		}
-	}
-
-	for(int j = Jsteps * VSIZE; Jtail && (j < col_max_C) ; ++j)
-	{
-		for(int k = 0; k < Ksteps * VSIZE ; ++k)
-		{
-			B2D[j][k] = B[k][j];
-		}
-	}
-
-	for(int k = Ksteps * VSIZE; Ktail && (k < rc_max_AB); ++k)
-	{
-		for (int j = Jsteps * VSIZE; Jtail && (j < col_max_C); ++j )
-		{
-			B2D[j][k] = B[k][j];
-		}
-	}
-*/
+	
 	// C[i][j] = Sum ( A[i][k] * B[k][j] ) = Sum( A[i][k] * B2D[j][k] )
 	for(int i=0; i < row_max_C ; ++i)
 	{
@@ -610,8 +590,8 @@ Example:\n"
         ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
-                h_A[i] = i*2.1;
-                h_B[i] = i*3.1;
+                h_A[i] = 1.0;//i*2.1;
+                h_B[i] = 1.0;//i*3.1;
                 h_C[i] = 0.0;
         }
 

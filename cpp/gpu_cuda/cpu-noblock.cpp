@@ -132,7 +132,6 @@ Example:\n"
         t[0] = omp_get_wtime();
 
 	long nelements = arg_N * arg_N;
-        std::cout<<"number elements: "<<nelements<<std::endl;
 
         // 2-х мерный массив в виде массива указателей на одномерный массив, т.к.
         // потом в пакетах BLAS или cuBLAS потребуется передавать именно НЕПРЕРЫВНЫЕ массивы
@@ -145,8 +144,8 @@ Example:\n"
         ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
-                h_A[i] = i*2.1;
-                h_B[i] = i*3.1;
+                h_A[i] = 1.0;//i*2.1;
+                h_B[i] = 1.0;//i*3.1;
                 h_C[i] = 0.0;
         }
 

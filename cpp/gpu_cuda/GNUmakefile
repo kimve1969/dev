@@ -1,7 +1,7 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
 OPT=-O3
-DIM=2000
-NCORE=4
+DIM=3000
+NCORE=8
 #skylake, broadwell, haswell, ivybridge, x86-64
 ARCH=-march=x86-64 -fPIC
 
@@ -36,7 +36,7 @@ test:
 	@echo 'End ********************************'
 cpu-block:
 	# see lscpu | grep avx
-	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT) $(ARCH)
+	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT) $(ARCH) -g
 	./cpu-block 5 mul print 1 trans
 cpu-noblock:
 	gcc cpu-noblock.cpp -o cpu-noblock -std=c++17 -lstdc++ -fopenmp $(OPT) $(ARCH)

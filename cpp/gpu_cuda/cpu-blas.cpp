@@ -97,15 +97,14 @@ Example:\n"
         t[0] = omp_get_wtime();
 
 	long nelements = arg_N * arg_N;
-        std::cout<<"number elements: "<<nelements<<std::endl;
 
         double* h_A = new double[nelements];
         double* h_B = new double[nelements];
         double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
-                h_A[i] = i*2.1;
-                h_B[i] = i*3.1;
+                h_A[i] = 1.0;//i*2.1;
+                h_B[i] = 1.0;//i*3.1;
                 h_C[i] = 0.0;
         }
 
@@ -138,7 +137,6 @@ Example:\n"
         prn("\n\n|A|:\n\n", h_matrix_A, arg_N);
         prn("\n\n|B|:\n\n", h_matrix_B, arg_N);
 
-        std::cout<<"number available threads is "<<std::thread::hardware_concurrency()<<"\n";
         std::cout<<"\ncomputation on CPU BLAS...\n";
 
         t[1] = omp_get_wtime();
