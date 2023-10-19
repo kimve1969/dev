@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[])
 {
-	const int N = 9;
+/*	const int N = 9;
 
 	double A[N][N]{	{1,2,	3,4,	5,6,	7,8,	9},
 			{10,11,	12,13,	14,15,	16,17,	18},
@@ -14,8 +14,8 @@ int main(int argc, char* argv[])
 			{55,56,	57,58,	59,60,	61,62,	63},
 			{64,65,	66,67,	68,69,	70,71,	72},
 			{73,74,	75,76,	77,78,	79,80,	81}};
+*/
 
-/*
 	const int N = 5;
 
 	double A[N][N]{	{1,2,	3,4,	5},
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 			{11,12,	13,14,	15},
 			{16,17,	18,19,	20},
 			{21,22,	23,24,	25}};
-*/
+
 /*	const int N = 4;
 
 	double A[N][N]{	{1,2,	3,4},
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
 			a1 = _mm_loadu_pd( & A[ j * PSIZE + 1][ k * VSIZE ] );
 			// transponation
 			// _mm_set_pd(double e2, double e0)
-			ta0 = _mm_set_pd( ((double*)(&a1))[0], ((double*)(&a0))[0] );
-			ta1 = _mm_set_pd( ((double*)(&a1))[1], ((double*)(&a0))[1] );
+			ta0 = _mm_unpacklo_pd(a0, a1);//_mm_set_pd( ((double*)(&a1))[0], ((double*)(&a0))[0] );
+			ta1 = _mm_unpackhi_pd(a0, a1);//_mm_set_pd( ((double*)(&a1))[1], ((double*)(&a0))[1] );
 			// store
 			_mm_storeu_pd( & B[ k * VSIZE + 0][ j * VSIZE ], ta0 );
 			_mm_storeu_pd( & B[ k * VSIZE + 1][ j * VSIZE ], ta1 );

@@ -45,7 +45,8 @@ enum opt_t
 	TRANS_AND_RED,
 	TRANS_AND_SSE2,
 	TRANS_AND_AVX,
-	TRANS_AND_AVX512F
+	TRANS_AND_AVX512F,
+	TRANS_AND_REG
 } _opt_t;
 
 // A[M][N]
@@ -71,6 +72,8 @@ const int CNST_DIM_OF_BLOCK = 48;
 // C = Sum ( A * B )
 void Asub_mul_Bsub( const double* const * A, const double* const * B, double* const * C, int row_max_C, int col_max_C, int rc_max_AB, opt_t opt)
 {
+	//std::cout<<"row_max_C = "<<row_max_C<<", col_max_C = "<<col_max_C<<", rc_max_AB = "<<rc_max_AB<<"\n";
+
 	for(int i=0; i < row_max_C ; ++i)
 	{
 		for(int k=0; k < rc_max_AB ; ++k)
@@ -192,13 +195,86 @@ void Asub_mul_Bsub( const double* const * A, const double* const * B, double* co
 	}
 }
 
+void gemm_avx_trans(const double* const * A, const double * const * transB, double * const *C, int i, int j, int k)
+{
+	// Intel x86-64 has 16 256-bit registers YMM0-YMM15, each register can store 4 double
+	// 16 reg * 4 double = 64 double
+	// 64 / 3 matrixes = 21 double
+	// sqrt(21) = 4 dimention of each A,B,C small-matrix
+	// we will use AVX
+	//  A 4x4, B 4x4, C 4x4 = 48 double, 48 / 4 = 12 registers A - 4 reg, B - 4 reg, C - reg
+	//
+	// Calc: 2*O(n^3) = 2*4^3 = 128 flop, _mm256_fmadd_pd() = 2 * 4 = 8 flop, 128 flop / 8 = 16 fma
+	// 
+	const int CNST_VEC_AVX = 4;
+	for(int i=0; i < CNST_VEC_AVX; ++i)
+	{
+		for(int j=0; j < CNST_VEC_AVX; ++j)
+		{
+			for(int k=0; k < CNST_VEC_AVX; ++k)
+			{
+				C[i][j] += A[i][k] * transB[j][k];
+			}
+		}
+	}
+	return;
+
+	__m256d a0 = _mm256_loadu_pd( & A[0][0] );
+	__m256d a1 = _mm256_loadu_pd( & A[1][0] );
+	__m256d a2 = _mm256_loadu_pd( & A[2][0] );
+	__m256d a3 = _mm256_loadu_pd( & A[3][0] );
+	__m256d b0 = _mm256_loadu_pd( & transB[0][0] );
+	__m256d b1 = _mm256_loadu_pd( & transB[1][0] );
+	__m256d b2 = _mm256_loadu_pd( & transB[2][0] );
+	__m256d b3 = _mm256_loadu_pd( & transB[3][0] );
+
+	__m256d c0, c1, c2, c3;
+
+	// calc small-matrixes Creg[i][j] += Areg[i][k] * Breg[j][k], where Breg is transponated
+	auto calc_and_set_Creg = [&]( int row )
+	{
+		double s0 = ((double*)(&c0))[3] + ((double*)(&c0))[2] + ((double*)(&c0))[1] + ((double*)(&c0))[0];
+		double s1 = ((double*)(&c1))[3] + ((double*)(&c1))[2] + ((double*)(&c1))[1] + ((double*)(&c1))[0]; 
+		double s2 = ((double*)(&c2))[3] + ((double*)(&c2))[2] + ((double*)(&c2))[1] + ((double*)(&c2))[0]; 
+		double s3 = ((double*)(&c3))[3] + ((double*)(&c3))[2] + ((double*)(&c3))[1] + ((double*)(&c3))[0];
+
+		__m256d sum = _mm256_add_pd(  _mm256_loadu_pd( & C[ row ][0] ) , _mm256_set_pd(s3, s2, s1, s0)  );	
+		_mm256_storeu_pd( & C[ row ][0],  sum );
+	};
+
+	// 0-row Creg 
+	c0 = _mm256_mul_pd( a0, b0 );
+	c1 = _mm256_mul_pd( a0, b1 );
+	c2 = _mm256_mul_pd( a0, b2 );
+	c3 = _mm256_mul_pd( a0, b3 );
+	calc_and_set_Creg(0);
+	// 1-row Creg 
+	c0 = _mm256_mul_pd( a1, b0 );
+	c1 = _mm256_mul_pd( a1, b1 );
+	c2 = _mm256_mul_pd( a1, b2 );
+	c3 = _mm256_mul_pd( a1, b3 );
+	calc_and_set_Creg(1);
+	// 0-row Creg 
+	c0 = _mm256_mul_pd( a2, b0 );
+	c1 = _mm256_mul_pd( a2, b1 );
+	c2 = _mm256_mul_pd( a2, b2 );
+	c3 = _mm256_mul_pd( a2, b3 );
+	calc_and_set_Creg(2);
+	// 0-row Creg 
+	c0 = _mm256_mul_pd( a3, b0 );
+	c1 = _mm256_mul_pd( a3, b1 );
+	c2 = _mm256_mul_pd( a3, b2 );
+	c3 = _mm256_mul_pd( a3, b3 );
+	calc_and_set_Creg(3);
+}
+
 void Asub_mul_transBsub( const double* const * A, const double* const * B, double* const* C, 
 			 int row_max_C, int col_max_C, int rc_max_AB, opt_t opt, double* const * B2D /* transpon(B) */ )
 {
+	//std::cout<<"row_max_C = "<<row_max_C<<", col_max_C = "<<col_max_C<<", rc_max_AB = "<<rc_max_AB<<"\n";
 	// copy from B[k][j] to B2D[j][k], B = trans( B2D )
 	const int CNST_VEC_AVX = 4;
-	assert(CNST_DIM_OF_BLOCK % CNST_VEC_AVX == 0 && "CNST_DIM_OF_BLOCK % CNST_VEC_AVX != 0");
-	
+
 	if( !(row_max_C == CNST_DIM_OF_BLOCK && col_max_C == CNST_DIM_OF_BLOCK && rc_max_AB == CNST_DIM_OF_BLOCK) /* small-size and tail-size A,B,C */ )
 	{
 		for(int k = 0; k < rc_max_AB; ++k)
@@ -241,7 +317,50 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 			}
 		}
 	}
-	
+
+	// Multiple on registers YMM0-YMM15
+	if( opt == TRANS_AND_REG && ( row_max_C == CNST_DIM_OF_BLOCK && col_max_C == CNST_DIM_OF_BLOCK && rc_max_AB == CNST_DIM_OF_BLOCK ) )
+	{
+		assert( (CNST_DIM_OF_BLOCK % CNST_VEC_AVX) == 0 );
+
+		const int steps = CNST_DIM_OF_BLOCK / CNST_VEC_AVX;
+
+		ALIGN(32) double* Areg[ CNST_VEC_AVX ];
+		ALIGN(32) double* Breg[ CNST_VEC_AVX ];
+		ALIGN(32) double* Creg[ CNST_VEC_AVX ];
+
+		for(int i=0; i < steps; ++i)
+		{
+			for(int j=0; j < steps; ++j)
+			{
+				// Rebuild Creg
+				for(int row=0; row < CNST_VEC_AVX; ++row)
+				{
+					Creg[ row ] = & C[ i * steps + row ][ j * steps ];
+				}
+				// Creg[i][j] += Areg[i][k] * Breg[j][k], where Breg is transponated
+				for(int k=0; k < steps; ++k)
+				{
+					// Rebuild Areg, Breg
+					for(int row=0; row < CNST_VEC_AVX; ++row)
+					{
+						Areg[ row ] = const_cast<double *>( & A[ i * steps + row ][ k * steps ] );
+						Breg[ row ] = const_cast<double *>( & B2D[ j * steps + row ][ k * steps ] );
+					}	
+					// calc Creg[i][j] 
+					gemm_avx_trans( Areg, Breg, Creg , i, j, k);
+				}
+			}
+		}
+
+		return;
+	}
+	else if ( opt == TRANS_AND_REG && !( row_max_C == CNST_DIM_OF_BLOCK && col_max_C == CNST_DIM_OF_BLOCK && rc_max_AB == CNST_DIM_OF_BLOCK ) )
+	{
+		// change algoritm for no full-size matrix and continue ...
+		opt = TRANS_AND_AVX;
+	}
+
 	// C[i][j] = Sum ( A[i][k] * B[k][j] ) = Sum( A[i][k] * B2D[j][k] )
 	for(int i=0; i < row_max_C ; ++i)
 	{
@@ -381,7 +500,7 @@ void Asub_mul_transBsub( const double* const * A, const double* const * B, doubl
 			}
 			else
 			{
-				assert( false);
+				assert( false && "Unknown type of optimization!");
 			}
 		}
 	}
@@ -478,7 +597,8 @@ void A_oper_B(const double* const * A, const double* const* B, double* const * C
 						// Csub[I][J] = Asub[I][K] * Bsub[K][J]
 						Asub_mul_Bsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt);
 					}
-					else if( TRANS == opt || TRANS_AND_RED == opt || TRANS_AND_SSE2 == opt || TRANS_AND_AVX == opt || TRANS_AND_AVX512F == opt )
+					else if( TRANS == opt || TRANS_AND_RED == opt || TRANS_AND_SSE2 == opt || TRANS_AND_AVX == opt || TRANS_AND_AVX512F == opt ||
+						 TRANS_AND_REG == opt )
 					{
 						// Csub[I][J] = Asub[I][K] * trans (Bsub[K][J])
 						Asub_mul_transBsub( Asub, Bsub, Csub, row_max_C, col_max_C, rc_max_AB, opt, B2D);
@@ -536,7 +656,8 @@ bool is_int(std::string arg)
 			  std::string(argv[5]) != "trans" &&
 			  std::string(argv[5]) != "trans+sse2" && 
 			  std::string(argv[5]) != "trans+avx" &&
-			  std::string(argv[5]) != "trans+avx512f" ) 
+			  std::string(argv[5]) != "trans+avx512f" &&
+			  std::string(argv[5]) != "trans+reg") 
           )
         {
                 // help
@@ -571,7 +692,8 @@ Example:\n"
 						       std::string( argv[5] ) == "trans" ? TRANS :
 						       std::string( argv[5] ) == "trans+sse2" ? TRANS_AND_SSE2 :
 						       std::string( argv[5] ) == "trans+avx" ? TRANS_AND_AVX :
-						       std::string( argv[5] ) == "trans+avx512f" ? TRANS_AND_AVX512F : NO /* defaulte no optimization */ };
+						       std::string( argv[5] ) == "trans+avx512f" ? TRANS_AND_AVX512F :
+						       std::string( argv[5] ) == "trans+reg" ? TRANS_AND_REG : NO /* defaulte no optimization */ };
 
         double t[10];
 
