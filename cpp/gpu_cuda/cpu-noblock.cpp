@@ -12,6 +12,7 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<omp.h>
 #include<thread>
 #include<iomanip>
+#include<cstdlib>
 
 #ifdef __GNUC__
         #define ALIGN(N) __attribute__((aligned(N)))    // Linux
@@ -144,8 +145,8 @@ Example:\n"
         ALIGN(64) double* h_C = new double[nelements];
 
         for(int i=0; i<nelements; ++i){
-                h_A[i] = 1.0;//i*2.1;
-                h_B[i] = 1.0;//i*3.1;
+                h_A[i] = std::rand() / (RAND_MAX + 1.0);//i*2.1;
+                h_B[i] = std::rand() / (RAND_MAX + 1.0);//i*3.1;
                 h_C[i] = 0.0;
         }
 

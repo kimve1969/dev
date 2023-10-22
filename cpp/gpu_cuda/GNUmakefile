@@ -1,9 +1,11 @@
 .PHONY: blas05 cpu05 cpu06 cpu06-trans cpu06-trans-sse cpu06-trans-avx512f cpu06-trans-scalar
 OPT=-O3
-DIM=3000
+DIM=1000
 NCORE=8
 #skylake, broadwell, haswell, ivybridge, x86-64
 ARCH=-march=x86-64 -fPIC
+#-g
+DEBUG=
 
 cpu:
 	clear
@@ -36,13 +38,13 @@ test:
 	@echo 'End ********************************'
 cpu-block:
 	# see lscpu | grep avx
-	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT) $(ARCH) -g
+	gcc cpu-block.cpp -o cpu-block -std=c++17 -lstdc++ -lm -fopenmp -mavx -mfma -mavx512f $(OPT) $(ARCH) $(DEBUG)
 	./cpu-block 5 mul print 1 trans
 cpu-noblock:
-	gcc cpu-noblock.cpp -o cpu-noblock -std=c++17 -lstdc++ -fopenmp $(OPT) $(ARCH)
+	gcc cpu-noblock.cpp -o cpu-noblock -std=c++17 -lstdc++ -fopenmp $(OPT) $(ARCH) $(DEBUG)
 	./cpu-noblock 5 mul print 1
 cpu-blas:
-	gcc cpu-blas.cpp -o cpu-blas -std=c++17 -lstdc++ `pkg-config blaspp --cflags --libs` -fopenmp $(OPT) $(ARCH)
+	gcc cpu-blas.cpp -o cpu-blas -std=c++17 -lstdc++ `pkg-config blaspp --cflags --libs` -fopenmp $(OPT) $(ARCH) $(DEBUG)
 	./cpu-blas 5 mul print 1
 gpu05:
 	nvcc gpu05.cu -o gpu05 -std=c++17 -lstdc++ -lcudart -Xcompiler=-fopenmp $(OPT)
@@ -55,6 +57,6 @@ gpu01:
 	#для вызова метематических функций в кернеле нужно указывать флаг компилятора: --expt-relaxed-constexpr
 	./gpu01
 a2b:
-	gcc a2b.cpp -o a2b -lstdc++ -mavx -std=c++17
+	gcc a2b.cpp -o a2b -lstdc++ -mavx -mavx2 -mavx512vl -std=c++17
 	./a2b
 	rm a2b
