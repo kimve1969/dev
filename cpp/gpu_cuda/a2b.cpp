@@ -83,6 +83,10 @@ int main(int argc, char* argv[])
 				_mm_storeu_pd( & B[ j * VSIZE + 0 ][ k * VSIZE ], a0);
 				_mm_storeu_pd( & B[ j * VSIZE + 1 ][ k * VSIZE ], a1);
 			}
+			else
+			{
+				assert( false && "Unknown type transporation!" );
+			}
 		}
 	}
 
