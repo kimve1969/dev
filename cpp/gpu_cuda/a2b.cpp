@@ -1,6 +1,7 @@
 #include<iostream>
 #include<immintrin.h>
-#include<vector>
+#include<array>
+#include<cassert>
 
 int main(int argc, char* argv[])
 {
@@ -18,21 +19,17 @@ int main(int argc, char* argv[])
 */
 
 	const int N = 5;
+	// array
+	std::array< std::array<double, N>, N> A
+		{	
+			1,2,	3,4,	5,
+			6,7,	8,9,	10,
+			11,12,	13,14,	15,
+			16,17,	18,19,	20,
+			21,22,	23,24,	25
+		};
 
-	double A[N][N]{	{1,2,	3,4,	5},
-			{6,7,	8,9,	10},
-			{11,12,	13,14,	15},
-			{16,17,	18,19,	20},
-			{21,22,	23,24,	25}};
-
-/*	const int N = 4;
-
-	double A[N][N]{	{1,2,	3,4},
-			{5,6,	7,8},
-			{9,10,	11,12},
-			{13,14,	15,16}};
-*/
-	double B[N][N];
+	std::array< std::array< double, N>, N> B{};
 	
 	__m128d a0, a1;
 	__m128d ta0, ta1;
@@ -117,8 +114,8 @@ int main(int argc, char* argv[])
 	}
 
 	// print
-	for(int k=0; k<N; ++k){
-		for(int j=0; j<N; ++j)
+	for(int k=0; k < A.size() ; ++k){
+		for(int j=0; j < A[k].size() ; ++j)
 		{
 			std::cout<<"A["<<k<<"]["<<j<<"] = "<<A[k][j]<<"\t";
 		}
@@ -126,8 +123,8 @@ int main(int argc, char* argv[])
 	}
 	std::cout<<"\n";
 
-	for(int k=0; k<N; ++k){
-		for(int j=0; j<N; ++j)
+	for(int k=0; k < A.size() ; ++k){
+		for(int j=0; j < A[k].size() ; ++j)
 		{
 			std::cout<<"B["<<k<<"]["<<j<<"]= "<<B[k][j]<<"\t";
 		}
