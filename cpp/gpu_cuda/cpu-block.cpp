@@ -11,8 +11,8 @@ Annotation:     CPU Matrix |C|=|A|+|B| and |C|=|A|*|B|
 #include<assert.h>
 #include<stdexcept>
 #include<omp.h>
-#include<thread>
 #include<cmath>
+#include<thread>
 #include<iomanip>
 #include<cstdlib>
 #include<emmintrin.h>
