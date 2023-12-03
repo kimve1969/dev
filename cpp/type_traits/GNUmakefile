@@ -1,3 +1,13 @@
+CXX=gcc
+CXXFLAGS=-std=c++17
+CXXLIBS=-lstdc++
+
+type_traits01: type_traits01.cpp
+	$(CXX) type_traits01.cpp -o type_traits01 $1 $(CXXFLAGS) $(CXXLIBS)
+	cat ./type_traits01.cpp
+	@echo "----------------------------------------------"
+	./type_traits01
+	rm type_traits01	
 rank:
 	gcc rank.cpp -o rank -lstdc++ -std=c++17
 	./rank

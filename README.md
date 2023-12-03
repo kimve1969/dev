@@ -6,6 +6,8 @@ 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
 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
 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
 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
+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
+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
 
 // set user and mail
 git config --global user.name=kimve1969
