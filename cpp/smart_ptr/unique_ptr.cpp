@@ -14,18 +14,18 @@ struct B: A{
 };
 
 int main(int argc, char* argv[]){
+  std::cout<<"Start\n";
 
   A* ptr1 = new A();
-  std::unique_ptr<A> uptr1(new A());
-
   std::cout<<"size of pointer of A* = "<<sizeof(ptr1)<<std::endl;
-  std::cout<<"size of smart pointer of std::unique_ptr<> = "<<sizeof(uptr1)<<std::endl;
-  
   delete ptr1;
+  
+  std::unique_ptr<A> uptr1(new A());
+  std::cout<<"size of smart pointer of std::unique_ptr<> = "<<sizeof(uptr1)<<std::endl;
 
   auto uptr2 = std::move(uptr1);
-  std::cout<<"pointer 1 = "<<uptr1.get()<<std::endl;
-  std::cout<<"pointer 2 = "<<uptr2.get()<<std::endl;
+  std::cout<<"smart pointer 1 = "<<uptr1.get()<<std::endl;
+  std::cout<<"smart pointer 2 = "<<uptr2.get()<<std::endl;
 
   auto deleter = [](A* ptr){
     std::cout<<"begin of deleter\n";
@@ -35,5 +35,6 @@ int main(int argc, char* argv[]){
 
   std::unique_ptr<A, decltype(deleter)> uptr3(new A(), deleter);
   
+  std::cout<<"End\n";
   return 0;
 }

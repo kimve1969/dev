@@ -13,10 +13,10 @@ int main(){
   typedef int && rref;
 
   int n{0};
-  lref&  r1 = n;
-  lref&& r2 = n;
-  rref&  r3 = n;
-  rref&& r4 = 1;
+  lref&  r1 = n; // int&& -> int, value
+  lref&& r2 = n; // int &&& -> int &, reference lvalue
+  rref&  r3 = n; // int &&& -> int &, reference lvalue
+  rref&& r4 = 1; // int && && -> int &&, reference rvalue
 
   std::cout<<std::boolalpha;
   std::cout<<"lref is lvalue - "<<std::is_lvalue_reference<lref>::value<<std::endl;

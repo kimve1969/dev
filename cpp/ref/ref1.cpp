@@ -1,21 +1,21 @@
 #include<iostream>
 
 struct A{
-  A(int x):m_x(x){ std::cout<<"cnt A("<<x<<")\n"; }
-  ~A(){ std::cout<<"dst ~A("<<m_x<<")\n"; }
+  A(int x):m_a(x){ std::cout<<"cnt A("<<m_a<<")\n"; }
+  ~A(){ std::cout<<"dst A("<<m_a<<")\n"; }
 
-  int m_x;
+  int m_a;
 };
 
 int main(){
-  A a1(1);
-  A &ra = a1;
-  
-  {
-    A a2(2);
-    ra = a2;
-  }
-  
-  A a3{3};
-  return 0;
+  std::cout<<"Start\n";
+
+  A a{1}; // cnt A
+  A &lva = a;
+  lva = A{2}; // cnt A(2),  a.m_a = 2, dst A(2)
+  A &&rva = A{3}; // cnt A(3)
+  // initialization rvalue reference extend liftime temprary object...
+
+  std::cout<<"End\n";
+  return 0; // dst A(3) dst A(2)
 }

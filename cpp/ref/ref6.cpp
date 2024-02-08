@@ -26,11 +26,9 @@ int main(){
 
   struct S{
     enum enum_t{A, B} e{B};
-    void f(int);
   } s;
   
   f(s.e, "s.e the member of object expression");
-  f(s.e, "s.f the member of object expression");
 
   enum enum_t{A, B, D, E} e{D};
   f(e, "e is enumeration");

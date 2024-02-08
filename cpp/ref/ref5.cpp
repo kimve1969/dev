@@ -24,16 +24,15 @@ int main(){
   std::cout<<"******************** overload lvalue and rvalue ******************\n";
 
   int i = 1;
-  int &ri = i;
-  const int& cri = i;
+  const int ci = 2;
   
-  f(ri, 1);
-  f(cri, 2);
-  f(1, 3);
+  f(i, 1);  // f(int&, int)
+  f(ci, 2); // f(const int&, int)
+  f(1, 3);  // f(int&&, int)
 
-  int &&rri = 1;
-  f(rri, 4); // call f(int&)
-  f(std::move(rri), 5); // call f(int&&)
+  int &&rvi = 1;
+  f(rvi, 4); // f(int&, int)
+  f(std::move(rvi), 5); // f(int&&, int)
   
   return 0;
 }

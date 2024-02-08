@@ -1,8 +1,8 @@
 10:
-	cat rval2.cpp
-	g++ rval2.cpp -o rval2 -lstdc++ -std=c++17
-	./rval2
-	rm rval2
+	cat myref_wrap.cpp
+	g++ myref_wrap.cpp -o myref_wrap -lstdc++ -std=c++17
+	./myref_wrap
+	rm myref_wrap
 9:
 	cat rval1.cpp
 	g++ rval1.cpp -o rval1 -lstdc++ -std=c++17
@@ -38,4 +38,10 @@
 	g++ ref1.cpp -o ref1 -lstdc++ -std=c++17
 	./ref1
 	rm ref1
+0:
+	cat ref0.cpp
+	g++ ref0.cpp -o ref0 -lstdc++ -std=c++17
+	./ref0
+	rm ref0
+
 
