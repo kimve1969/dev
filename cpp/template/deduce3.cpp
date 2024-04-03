@@ -26,7 +26,7 @@ int main(){
   int a[13];
   int *pa = a;
 
-  f(a); // expr - int [13] => T - int [13], param - int [13]& f<int [13]>(int const (&)[13])
+  f(a); // expr - int [13] => T - int [13], param - int const (&)[13] f<int [13]>(int const (&)[13])
   f(pa); // expr - int* => T - int*, param - int* const&, f<int*>(int* const&)
 
   f(g); // expr - int (int) => T - int (int), param - int (const &)(int), f<int (int)>(int (const &)(int))

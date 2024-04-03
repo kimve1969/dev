@@ -1,3 +1,11 @@
+map1:
+	g++ map1.cpp -o map1 -lstdc++ -std=c++17
+	./map1
+	rm map1
+set2:
+	g++ set2.cpp -o set2 -lstdc++ -std=c++17
+	./set2
+	rm set2
 set1:
 	g++ set1.cpp -o set1 -lstdc++ -std=c++17
 	./set1
