@@ -1,3 +1,9 @@
+my_remove_reference:
+	clear
+	cat my_remove_reference.cpp
+	g++ my_remove_reference.cpp -o my_remove_reference -lstdc++ -std=c++17
+	./my_remove_reference
+	rm my_remove_reference
 8:
 	cat decltype1.cpp
 	g++ decltype1.cpp -o decltype1 -lstdc++ -std=c++17
