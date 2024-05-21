@@ -1,6 +1,6 @@
 3:
 	clear
-	g++ deikstra.cpp -o deikstra -lstdc++ -std=c++17
+	g++ deikstra.cpp -o deikstra -lstdc++ -std=c++20
 	@echo "------------ INPUT -------------------"
 	cat graph03.in
 	@echo "--------------------------------------"

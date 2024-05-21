@@ -1,0 +1,84 @@
+# set terminal pngcairo  transparent enhanced font "arial,10" fontscale 1.0 size 600, 400 
+# set output 'armillary.1.png'
+# https://gnuplot.sourceforge.net/demo/armillary.1.gnu
+unset border
+set angles degrees
+unset key
+set label 1 "в™ђ" at polar 267, 1.10000, 0 center norotate font ",15" back nopoint
+set label 2 "в™‘" at polar 300, 1.10000, 0 center norotate font ",15" back nopoint
+set label 3 "в™’" at polar 328, 1.10000, 0 center norotate font ",15" back nopoint
+set label 4 "в™“" at polar 352, 1.10000, 0 center norotate font ",15" back nopoint
+set label 5 "в™€" at polar 29, 1.10000, 0 center norotate font ",15" back nopoint
+set label 6 "в™‰" at polar 53, 1.10000, 0 center norotate font ",15" back nopoint
+set label 7 "в™Љ" at polar 90, 1.10000, 0 center norotate font ",15" back nopoint
+set label 8 "в™‹" at polar 118, 1.10000, 0 center norotate font ",15" back nopoint
+set label 9 "в™Њ" at polar 138, 1.10000, 0 center norotate font ",15" back nopoint
+set label 10 "в™Ќ" at polar 174, 1.10000, 0 center norotate font ",15" back nopoint
+set label 11 "в™Ћ" at polar 218, 1.10000, 0 center norotate font ",15" back nopoint
+set label 12 "в™Џ" at polar 241, 1.10000, 0 center norotate font ",15" back nopoint
+set label 13 "в›Ћ" at polar 248, 1.10000, 0 center norotate font ",15" back nopoint
+set arrow 1 from 0.00000, 0.00000, -1.20000 to 0.00000, 0.00000, 1.20000 head back filled linewidth 2.000 dashtype solid
+set object  1 circle center polar 267, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  1 back clip lw 1.0  dashtype solid fc  rgb "#b87fff"  fillstyle   solid 1.00 border lt -1
+set object  2 circle center polar 300, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  2 back clip lw 1.0  dashtype solid fc  rgb "#ff7fff"  fillstyle   solid 1.00 border lt -1
+set object  3 circle center polar 328, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  3 back clip lw 1.0  dashtype solid fc  rgb "#ff7fc3"  fillstyle   solid 1.00 border lt -1
+set object  4 circle center polar 352, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  4 back clip lw 1.0  dashtype solid fc  rgb "#ff7f90"  fillstyle   solid 1.00 border lt -1
+set object  5 circle center polar 29, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  5 back clip lw 1.0  dashtype solid fc  rgb "#ffbd7f"  fillstyle   solid 1.00 border lt -1
+set object  6 circle center polar 53, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  6 back clip lw 1.0  dashtype solid fc  rgb "#fff07f"  fillstyle   solid 1.00 border lt -1
+set object  7 circle center polar 90, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  7 back clip lw 1.0  dashtype solid fc  rgb "#bfff7f"  fillstyle   solid 1.00 border lt -1
+set object  8 circle center polar 118, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  8 back clip lw 1.0  dashtype solid fc  rgb "#83ff7f"  fillstyle   solid 1.00 border lt -1
+set object  9 circle center polar 138, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object  9 back clip lw 1.0  dashtype solid fc  rgb "#7fffa5"  fillstyle   solid 1.00 border lt -1
+set object 10 circle center polar 174, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object 10 back clip lw 1.0  dashtype solid fc  rgb "#7ffff2"  fillstyle   solid 1.00 border lt -1
+set object 11 circle center polar 218, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object 11 back clip lw 1.0  dashtype solid fc  rgb "#7faeff"  fillstyle   solid 1.00 border lt -1
+set object 12 circle center polar 241, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object 12 back clip lw 1.0  dashtype solid fc  rgb "#817fff"  fillstyle   solid 1.00 border lt -1
+set object 13 circle center polar 248, 1.10000, 0 size character 1.5 arc [0:360] wedge 
+set object 13 back clip lw 1.0  dashtype solid fc  rgb "#907fff"  fillstyle   solid 1.00 border lt -1
+set object 21 circle center 0.00000, 0.00000, 0.00000 size 1 arc [0:360] wedge 
+set object 21 front clip lw 3.0  dashtype solid fc  lt -1 fillstyle  empty border lt -1
+set object 22 circle center 0.00000, 0.00000, 1.00000 size 0.1 arc [0:360] wedge 
+set object 22 back clip lw 1.0  dashtype solid fc  rgb "slategrey"  fillstyle  transparent solid 0.50 border
+set object 23 circle center 0.00000, 0.00000, -1.00000 size 0.1 arc [0:360] wedge 
+set object 23 back clip lw 1.0  dashtype solid fc  rgb "slategrey"  fillstyle  transparent solid 0.50 border
+set object 24 polygon from polar 0, 0.500000, -1.2 to polar 72, 0.500000, -1.2 to polar 144, 0.500000, -1.2 to polar 216, 0.500000, -1.2 to polar 288, 0.500000, -1.2 to polar 0, 0.500000, -1.2
+set object 24 back clip lw 1.0  dashtype solid fc  rgb "olive"  fillstyle   solid 1.00 border rgb "black" 
+set view 64, 302, 1.62, 1
+set view azimuth 23.4
+set view  equal xyz
+set style data lines
+set xzeroaxis
+set yzeroaxis
+set zzeroaxis
+set xyplane at 0
+unset xtics
+unset ytics
+unset ztics
+unset cbtics
+unset rtics
+set title "Circle and polygon objects in 3D" 
+set title  font ",20" textcolor lt -1 norotate
+set xrange [ -1.10000 : 1.10000 ] noreverse nowriteback
+set x2range [ * : * ] noreverse writeback
+set yrange [ -1.10000 : 1.10000 ] noreverse nowriteback
+set y2range [ * : * ] noreverse writeback
+set zrange [ -1.10000 : 1.10000 ] noreverse nowriteback
+set cbrange [ * : * ] noreverse writeback
+set rrange [ * : * ] noreverse writeback
+set colorbox vertical origin screen 0.9, 0.2 size screen 0.05, 0.6 front  noinvert bdefault
+NO_ANIMATION = 1
+save_encoding = "utf8"
+array Zodiac[13] = ["в™ђ","в™‘","в™’","в™“","в™€","в™‰","в™Љ","в™‹","в™Њ","в™Ќ","в™Ћ","в™Џ","в›Ћ"]
+array Longitude[13] = [267.0,300.0,328.0,352.0,29.0,53.0,90.0,118.0,138.0,174.0,218.0,241.0,248.0]
+## Last datafile plotted: "+"
+splot sample [u=0:360] '+' using (cos(u)):(0):(sin(u)) lw 2,              [u=0:360] '+' using (cos(u)):(sin(u)):(0) lw 2,              [u=0:360] '+' using (0):(cos(u)):(sin(u)) lw 2
+

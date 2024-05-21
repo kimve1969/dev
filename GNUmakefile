@@ -84,6 +84,7 @@ test2:
 	sudo cp lib/* /usr/lib	
 math:
 	sudo apt install octave 		# see man octave, octave --help
+	sudo apt install coinor-clp		# solver for linea programming
 upload:
 	git push --set-upstream origin master
 
