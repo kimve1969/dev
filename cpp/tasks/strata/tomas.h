@@ -1,7 +1,5 @@
 #pragma once
-#include<vector>
 #include"utility.h"
-
 // Tomas method
 /* 	A is:
  *	b1	c1	0	0 ...				x1		d1

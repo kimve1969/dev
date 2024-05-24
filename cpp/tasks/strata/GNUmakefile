@@ -18,3 +18,9 @@ test_tomas:
 	gcc test_tomas.cpp -o test_tomas -lstdc++ -std=c++17
 	./test_tomas
 	rm test_tomas
+all:
+	make test_tomas
+	make heat_eq_1d
+	make heat_eq_1d_implicit
+	make heat_eq_2d
+

@@ -1,6 +1,4 @@
 #include<iostream>
-#include<vector>
-#include<algorithm>
 #include<cmath>
 #include"utility.h"
 #include"tomas.h"
