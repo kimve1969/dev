@@ -2,6 +2,7 @@
 #include<vector>
 #include<algorithm>
 #include"utility.h"
+#include"tomas.h"
 
 /*
  *
@@ -40,7 +41,7 @@ int main( int argc, char* argv[])
 	constexpr int Nx = 100, Nt = 100;
 	
 	// u[t,x]
-	std::vector< std::vector<double> > u( Nt+1, std::vector<double>( Nx+1 ) );
+	vec2D_t<double> u( Nt+1, Nx+1 );
 	// set initial contidion: u[0,x]
 	std::for_each( u[0].begin(), u[0].end(), [](auto &e){ e = 0.0; } );
 	// set boundary condition: u[t,0], u[t, Nx]
@@ -50,17 +51,17 @@ int main( int argc, char* argv[])
 	std::cout<<"dt = "<<dt<<", dx = "<<dx<<", r = "<<r<<"\n";	
 		
 	// calc
-	constexpr double a{-r}, b{1+2*r}, c{-r} /* see above */;
-	std::cout<<"a = "<<a<<", b = "<<b<<", c = "<<c<<"\n";
+	vec1D_t<double> a(Nx+1, -r), b(Nx+1, 1+2*r), c(Nx+1, -r); /* see above */;
+
 	for(int n = 0; n < Nt ; ++n)
 	{
-		std::vector< double > d( Nx-1 );
+		vec1D_t< double > d( Nx-1 );
 		// copy current time layer
 		std::copy_n( u[n].begin()+1, Nx-1, d.begin() );
 		d[0] 	+= r * u[n][0]; 
 		d[Nx-2] += r * u[n][Nx];
 		// calc next time layer
-		std::vector< double > x /* u(n+1) */ = calc_Tomas(a, b, c, std::move( d /* u(n) */));
+		vec1D_t< double > x /* u(n+1) */ = calc_Tomas( std::move(a), std::move(b), std::move(c), std::move( d /* u(n) */));
 		// copy next time layer
 		std::copy_n( x.begin(), Nx-1, u[n+1].begin()+1 );
 	}

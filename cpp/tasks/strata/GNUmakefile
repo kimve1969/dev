@@ -13,8 +13,8 @@ heat_eq_1d:
 	gcc heat_eq_1d.cpp -o heat_eq_1d -lstdc++ -std=c++17
 	./heat_eq_1d
 	rm heat_eq_1d
-test:
+test_tomas:
 	clear
-	gcc utility_test.cpp -o utility_test -lstdc++ -std=c++17
-	./utility_test
-	rm utility_test
+	gcc test_tomas.cpp -o test_tomas -lstdc++ -std=c++17
+	./test_tomas
+	rm test_tomas
