@@ -1,7 +1,9 @@
 #include<iostream>
+#include<algorithm>
 #include<cmath>
 #include"utility.h"
 #include"tomas.h"
+#include"yanenko.h"
 
 /*
  * 	Homework: Strata Solution, 21.05.2024
@@ -33,117 +35,82 @@
 
 namespace
 {
-	class base_xy_t
+	struct base_xy_t
 	{
-		public:
+		/*public:
 			base_xy_t(double Nx, double Ny) : m_Nx(Nx), m_Ny(Ny){}
-		private:
-			double m_Nx, m_Ny;
+		private:*/
+		size_t num_x_nodes, num_y_nodes;
+	};
+
+	struct base_xyt_t
+	{
+		size_t num_x_nodes, num_y_nodes, num_t_nodes;
 	};
 
 	struct init_alpha_t : public base_xy_t
 	{
-		init_alpha_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(int xi, int yj)
+		//init_alpha_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
+		auto operator()(size_t xi, size_t yj)
 		{
-			return std::abs( std::sin(xi) + std::cos(yj) );
+			return 0.005;//std::abs( std::sin(xi) + std::cos(yj) );
 		}
 	};
 
 	struct init_xy_t : public base_xy_t
 	{
-		init_xy_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(double xi, double yj)
+		auto operator()(size_t xi, size_t yj)
 		{
-			return 1.0 /* const, maybe exchange */;
+			return 0.0d /* const, maybe exchange */;
 		}
 	};
 
-	struct bound_x0_t  : public base_xy_t
+	struct bound_x0_t  : public base_xyt_t
 	{
-		bound_x0_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(double yj, double tn)
+		auto operator()(size_t yj, size_t tn)
 		{
-			return 2.0 /* const, maybe exchange */; 
+			return 20.0d /* const, maybe exchange */; 
 		}
 	};
 
-	struct bound_xL_t : public base_xy_t 
+	struct bound_xL_t : public base_xyt_t 
 	{
-		bound_xL_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(int yj, int tn)
+		auto operator()(size_t yj, size_t tn)
 		{
-			return 3.0 /* const, maybe exchange */;
+			return 0.0; //5.0d /* const, maybe exchange */;
 		}
 	};
 
-	struct bound_y0_t : public base_xy_t
+	struct bound_y0_t : public base_xyt_t
 	{
-		bound_y0_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(int xi, int tn)
+		auto operator()(size_t xi, size_t tn)
 		{
-			return 4.0 /* const, maybe exchange */;
+			return 0.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
-	struct bound_yM_t : public base_xy_t
+	struct bound_yM_t : public base_xyt_t
 	{
-		bound_yM_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(int xi, int tn)
+		auto operator()(size_t xi, size_t tn)
 		{
-			return 4.0 /* const, maybe exchange */;
+			return 0.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
-	struct source_t : base_xy_t
+	struct source_t : base_xyt_t
 	{
-		source_t(double Nx, double Ny) : base_xy_t(Nx, Ny){}
-		auto operator()(int tn)
+		auto operator()(size_t xi, size_t yj, double old_value, size_t tn)
 		{
-			return tn < 1000 ? 10.0 /* turn on */ : 0.0 /* turn off */;
+			if( (num_x_nodes / 2) == xi && (num_y_nodes / 2) == yj )
+			{
+				return tn < 100 ? 10.0 /* turn on */ : old_value /* turn off */;
+			}
+			else
+			{
+				return old_value;
+			}
 		}
 	};
-
-	/*
-	 *	Yanenko numeric method, 1967 year
-	 *	
-	 *	du/dt = alpha * (du2/d2x + du2/d2y) + f(x,y,t)
-	 *	
-	 *	step 1, from (tn) to (tn+1/2)
-	 *	r = dt * alpha[xi][yj] / 2 * dx * dx
-	 *
-	 *	r * v[tn+1/2][xi-1][yj] - (1 + r) * v[tn+1/2][xi][yj] + r * v[tn+1/2][xi+1][yj] = - u[tn][xi][yj] + 0.5 * f[tn][xi][yj],	
-	 *	v[tn+1/2][][] - unknown, u[tn][][] - famous
-	 *
-	 *	step 2, from (tn+1/2) to (tn)
-	 *	r = dt * alpha[xi][yj] / 2 * dy * dy
-	 *
-	 *	r * w[tn+1][xi][yj-1] - (1 + r) * w[tn+1][xi][yj] r * w[n+1][xi][yj+1] = -v[tn+1/2][xi][yj] + 0.5 * f[tn][xi][yj],
-	 *	w[tn][][] - unknown, v[tn+1/2][xi][yj] - famous:q
-	 *
-	 * */
-	
-	vec2D_t<double> calc_Yanenko( const vec2D_t<double> &u, 
-				      const vec2D_t<double> &alpha, 
-				      int dt,
-				      int dx,
-				      int dy,
-				      bound_x0_t &&bound_x0,
-				      bound_xL_t &&bound_xL,
-				      bound_y0_t &&bound_y0,
-				      bound_yM_t &&bound_yM,
-				      source_t   &&source )
-	{
-		vec2D_t v( u.size() /*x*/, u[0].size() /*y*/, 0.0d ); // v is u[tn+1/2]
-		vec2D_t w( u.size() /*x*/, u[0].size() /*y*/, 0.0d ); // w is u[tn+1]
-				
-		// Step 1
-		
-
-		// Step 2
-
-		return w;
-	}	
 };
 
 int main(int argc, char* argv[])
@@ -154,34 +121,62 @@ int main(int argc, char* argv[])
 	constexpr int Nx{ 10 }, Ny{ 10 }, Nt{ 100 };
 	constexpr double dt{ T/Nt }, dx{ Lx/Nx }, dy{ Ly/Ny };
 	
-	// Step 1. Create 3-d grid of surface Nx * Ny * Ct, where 
-	// Ct is 10 steps of time: 0, 1, 2, 3, 10, 0.1*Nt, 0.25*Nt, 0.5*Nt, 0.75*Nt, 1.0*Nt
-	vec2D_t<double> u( Nx + 1, Ny + 1, 0.0 );
-	init_xy_t init_xy(Nx, Ny);
-	for( int xi = 0; xi < u.size(); ++xi)
-		for( int yj = 0; yj < u[xi].size(); ++yj )
-			u[ xi ][ yj ] = init_xy( xi, yj );
-
-	prn2D("u[x][y]:\n", u);
-
 	// 1.1 Fill grid by coefficient of thermal conductivity - alpha[xi][yj]
 	vec2D_t<double> alpha( Nx + 1, Ny + 1);		
-	init_alpha_t init_alpha(Nx, Ny);
-	for( int xi = 0; xi < alpha.size() ; ++xi )
-		for( int yj = 0; yj < alpha[ xi ].size() ; ++yj )
+	init_alpha_t init_alpha{Nx, Ny};
+	for( size_t xi = 0; xi < alpha.size() ; ++xi )
+		for( size_t yj = 0; yj < alpha[ xi ].size() ; ++yj )
 			alpha[ xi ][ yj ] =  init_alpha( xi, yj );
 
 	prn2D("alpha:\n", alpha);
+	
+	// Step 1. Create 3-d grid of surface Nx * Ny * Ct, where 
+	// Ct is 10 steps of time: 0, 1, 2, 3, 10, 0.1*Nt, 0.25*Nt, 0.5*Nt, 0.75*Nt, 1.0*Nt
+	vec2D_t<double> u( Nx + 1, Ny + 1, 0.0 );
+	init_xy_t init_xy{Nx, Ny};
+	for( size_t xi = 0; xi < u.size(); ++xi)
+		for( size_t yj = 0; yj < u[xi].size(); ++yj )
+			u[ xi ][ yj ] = init_xy( xi, yj );
+	
+	// Step 2.
+	bound_x0_t bound_x0{Nx+1, Ny+1, Nt+1};
+	bound_xL_t bound_xL{Nx+1, Ny+1, Nt+1};
+	bound_y0_t bound_y0{Nx+1, Ny+1, Nt+1};
+	bound_yM_t bound_yM{Nx+1, Ny+1, Nt+1};
+	source_t source{Nx+1, Ny+1, Nt+1};
 
-	// Step 2. 
-	vec2D_t<double> un_1 = calc_Yanenko( u, alpha, dt, dx, dy,
-					     bound_x0_t {Nx,Ny}, 
-					     bound_xL_t {Nx,Ny}, 
-					     bound_y0_t {Nx,Ny}, 
-					     bound_yM_t {Nx,Ny}, 
-					     source_t {Nx,Ny} );
+	for( size_t tn = 0; tn < 1; ++tn )
+	{
+		for( size_t yj = 1; yj < Ny; ++yj )
+		{
+			// u(0,y) & u(M,y)
+			u[0][yj] 	= bound_x0(yj, tn);
+			u[Nx][yj] 	= bound_xL(yj, tn);
+		}
 
-	prn2D("un_1:\n", un_1);	
+		for( size_t xi = 1; xi < Nx; ++xi )
+		{
+			// u(x,0) & u(x,L) 
+			u[xi][0]	= bound_y0(xi, tn);
+			u[xi][Nx]	= bound_yM(xi, tn);
+		}
+
+		/*for( size_t xi = 0; xi < Nx+1; ++xi )
+		  for( size_t yj = 0; yj < Ny+1; ++yj )
+		  u[xi][yj] = source(xi, yj, u[xi][yj], tn);*/
+
+	
+		// calc Yanenko
+		vec2D_t<double> u_tn = calc_Yanenko( u, alpha, dx, dy, dt );
+	
+		if( tn == 0 || tn == 1 || tn == 2 || tn == 10 || tn == 25 || tn == 50 || tn == 75 || tn == 99 )
+		{
+			std::cout<<"\ntn: ----------------------- "<<tn<<"--------------------------\n";
+			prn2D("u:\n", u);
+			prn2D("u_tn:\n", u_tn);
+		}
+		std::copy( u_tn.begin(), u_tn.end(), u.begin() );
+	}
 
 	std::cout<<"End\n";
 	return EXIT_SUCCESS;

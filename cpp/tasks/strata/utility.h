@@ -30,6 +30,20 @@ namespace
 			std::cout<<"\n";
 		};
 
+	/*
+	 *	vec2D_t(Nx, Ny), Nx - col, Ny - row
+	 *
+	 *	print as:
+	 *
+	 * 	0
+	 * 	---------------> y
+	 *	|
+	 *	|
+	 *	|
+	 *	|
+	 *	v x
+	 *	
+	 * */
 	template<typename T>
 		void prn2D(const char* str, T& vec2D, bool bindx = false)
 		{

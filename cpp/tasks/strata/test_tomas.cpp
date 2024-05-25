@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 	 *	x = {0.5, 0.0, 0.5}
 	 * */
 
-	vec1D_t<double> x = calc_Tomas( vec1D_t{1.0, 1.0}, vec1D_t{2.0, 2.0, 2.0}, vec1D_t{1.0, 1.0}, vec1D_t{1.0, 1.0, 1.0} );
+	vec1D_t<double> x = calc_Tomas( vec1D_t{1.0, 1.0} /* a */, vec1D_t{2.0, 2.0, 2.0} /* b */, vec1D_t{1.0, 1.0} /* c */, vec1D_t{1.0, 1.0, 1.0} /* d */);
 	assert( (x == vec1D_t{0.5, 0.0, 0.5}) );
 	prn1D("x: ", x);
 
