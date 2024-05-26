@@ -1,5 +1,6 @@
 #include<iostream>
 #include<algorithm>
+#include<initializer_list>
 #include<cmath>
 #include"utility.h"
 #include"tomas.h"
@@ -77,7 +78,7 @@ namespace
 	{
 		auto operator()(size_t yj, size_t tn)
 		{
-			return 0.0; //5.0d /* const, maybe exchange */;
+			return 20.0d; //5.0d /* const, maybe exchange */;
 		}
 	};
 
@@ -85,7 +86,7 @@ namespace
 	{
 		auto operator()(size_t xi, size_t tn)
 		{
-			return 0.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
+			return 20.0d; //20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
@@ -93,7 +94,7 @@ namespace
 	{
 		auto operator()(size_t xi, size_t tn)
 		{
-			return 0.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
+			return 20.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
@@ -145,18 +146,18 @@ int main(int argc, char* argv[])
 	bound_yM_t bound_yM{Nx+1, Ny+1, Nt+1};
 	source_t source{Nx+1, Ny+1, Nt+1};
 
-	for( size_t tn = 0; tn < 1; ++tn )
+	for( size_t tn = 0; tn < Nt; ++tn )
 	{
+		// u(0,y) & u(M,y)
 		for( size_t yj = 1; yj < Ny; ++yj )
 		{
-			// u(0,y) & u(M,y)
 			u[0][yj] 	= bound_x0(yj, tn);
 			u[Nx][yj] 	= bound_xL(yj, tn);
 		}
-
+		
+		// u(x,0) & u(x,L) 
 		for( size_t xi = 1; xi < Nx; ++xi )
 		{
-			// u(x,0) & u(x,L) 
 			u[xi][0]	= bound_y0(xi, tn);
 			u[xi][Nx]	= bound_yM(xi, tn);
 		}
@@ -165,16 +166,24 @@ int main(int argc, char* argv[])
 		  for( size_t yj = 0; yj < Ny+1; ++yj )
 		  u[xi][yj] = source(xi, yj, u[xi][yj], tn);*/
 
-	
-		// calc Yanenko
-		vec2D_t<double> u_tn = calc_Yanenko( u, alpha, dx, dy, dt );
-	
-		if( tn == 0 || tn == 1 || tn == 2 || tn == 10 || tn == 25 || tn == 50 || tn == 75 || tn == 99 )
+		auto find_in_list = []( std::initializer_list<size_t> l, size_t val)
 		{
-			std::cout<<"\ntn: ----------------------- "<<tn<<"--------------------------\n";
-			prn2D("u:\n", u);
-			prn2D("u_tn:\n", u_tn);
-		}
+			return std::find( l.begin(), l.end(), val ) != l.end();
+		};
+
+		// calc Yanenko
+		static const std::initializer_list<size_t> trace_points{}; // {0,1}
+		bool btrace = find_in_list( trace_points, tn );
+		
+		vec2D_t<double> u_tn = calc_Yanenko( u, alpha, dx, dy, dt, btrace );
+	
+		static const std::initializer_list<size_t> check_points{0, 1, 2, Nt/10, Nt/4, Nt/2, Nt*3/4, Nt-1 };
+		bool bprn = find_in_list( check_points, tn );
+		
+		if(bprn) std::cout<< "\ntn: ----------------------- "<<tn<<"--------------------------\n";
+		prn2D("u:\n", u, bprn);
+		prn2D("u_tn:\n", u_tn, bprn);
+	
 		std::copy( u_tn.begin(), u_tn.end(), u.begin() );
 	}
 

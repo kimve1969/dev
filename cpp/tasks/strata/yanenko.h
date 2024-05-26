@@ -24,14 +24,16 @@ namespace
 	 *
 	 * */
 	template<typename T> //, typename Bound_x0, typename Bound_xL, typename Bound_y0, typename Bound_yM, typename Source>
-	vec2D_t< T > calc_Yanenko( const vec2D_t< T > &u, const vec2D_t< T > &alpha, T dx, T dy, T dt )
+	vec2D_t< T > calc_Yanenko( const vec2D_t< T > &u, const vec2D_t< T > &alpha, T dx, T dy, T dt, bool prn = false )
 	{
+		if( prn ) std::cout << "-------------------------- Start Yanenko method --------------------- \n";
 		const size_t Nx{ u.size() } /*x*/, Ny{ u[0].size() /*y*/ };
 		vec2D_t v( Nx, Ny, 0.0d ); // v is 	u[tn+1/2]
 		vec2D_t w( Nx, Ny, 0.0d ); // w is 	u[tn+1]
 		
-		//prn2D("u:\n", u);
-
+		prn2D("u:\n", u, prn);
+		
+		// Step 1
 		for( size_t yj = 1; yj < Ny-1 /*y*/ ; ++yj )
 		{
 			vec1D_t a(Nx-2, 0.0d), b(Nx-2, 0.0d), c(Nx-2, 0.0d), d(Nx-2, 0.0d); 
@@ -47,13 +49,17 @@ namespace
 			d[Nx-3] += -a[Nx-3] * u[Nx-1][yj] /*xL bound*/;
 
 			vec1D_t<double> res = calc_Tomas( std::move(a), std::move(b), std::move(c), std::move(d) );
-
-			prn1D("yj: ", res );
-
-			std::copy( res.begin(), res.end(), v[yj].begin()+1);
+		
+			prn1D("d: ", d, prn );
+			prn1D("x: ", res, prn );
+			
+			for( size_t xi = 1; xi < Nx-1; ++xi )
+			{
+				v[xi][yj] = res[xi-1];
+			}
 		}		
 
-		prn2D("v:\n", v);
+		prn2D("v:\n", v, prn);
 
 		// Step 2
 		for( size_t xi = 1; xi < Nx-1 /*x*/ ; ++xi )
@@ -71,13 +77,15 @@ namespace
 			d[Ny-3] += -a[Ny-3] * u[xi][Ny-1] /* yM bound */;
 
 			vec1D_t<double> res = calc_Tomas( std::move(a), std::move(b), std::move(c), std::move(d) );
-
-			prn1D("xi: ", res );
+			
+			prn1D("d: ", d, prn);
+			prn1D("y: ", res, prn );
 
 			std::copy( res.begin(), res.end(), w[xi].begin()+1);
 		}
 
-		//prn2D("w:\n", w);
+		prn2D("w:\n", w, prn );
+		if( prn ) std::cout << "--------------------------- Stop Yanenko method --------------------- \n";
 
 		return w;
 	}

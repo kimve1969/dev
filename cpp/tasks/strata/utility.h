@@ -20,8 +20,10 @@ namespace
 	};
 
 	template<typename T>
-		void prn1D(const char* str, T& vec1D)
+		void prn1D(const char* str, T& vec1D, bool prn = true)
 		{
+			if( not prn ) return;
+
 			std::cout<<str;
 			for(int i=0; i<vec1D.size(); ++i)
 			{
@@ -45,8 +47,10 @@ namespace
 	 *	
 	 * */
 	template<typename T>
-		void prn2D(const char* str, T& vec2D, bool bindx = false)
+		void prn2D(const char* str, T& vec2D, bool prn = true, bool bindx = false)
 		{
+			if( not prn ) return;
+
 			std::cout<<str;
 			for(int i = 0; i < vec2D.size(); ++i)
 			{
