@@ -100,15 +100,17 @@ namespace
 
 	struct source_t : base_xyt_t
 	{
-		auto operator()(size_t xi, size_t yj, double old_value, size_t tn)
+		auto operator()(size_t xi, size_t yj, size_t tn)
 		{
-			if( (num_x_nodes / 2) == xi && (num_y_nodes / 2) == yj )
+			size_t cx = num_x_nodes / 2;
+			size_t cy = num_y_nodes / 2;
+			if( (cx-1 <= xi) && (xi <= cx+1 ) && (cy-1 <= yj) && (yj <= cy+1) )
 			{
-				return tn < 100 ? 10.0 /* turn on */ : old_value /* turn off */;
+				return tn < 50 ? -2.0d /* turn on */ : 0.0d /* turn off */;
 			}
 			else
 			{
-				return old_value;
+				return 0.0d;
 			}
 		}
 	};
@@ -148,35 +150,38 @@ int main(int argc, char* argv[])
 
 	for( size_t tn = 0; tn < Nt; ++tn )
 	{
-		// u(0,y) & u(M,y)
+		// x-boundary u(0,y) & u(M,y)
 		for( size_t yj = 1; yj < Ny; ++yj )
 		{
 			u[0][yj] 	= bound_x0(yj, tn);
 			u[Nx][yj] 	= bound_xL(yj, tn);
 		}
 		
-		// u(x,0) & u(x,L) 
+		// y-boundary u(x,0) & u(x,L) 
 		for( size_t xi = 1; xi < Nx; ++xi )
 		{
 			u[xi][0]	= bound_y0(xi, tn);
 			u[xi][Nx]	= bound_yM(xi, tn);
 		}
 
-		/*for( size_t xi = 0; xi < Nx+1; ++xi )
+		// sources
+		for( size_t xi = 0; xi < Nx+1; ++xi )
 		  for( size_t yj = 0; yj < Ny+1; ++yj )
-		  u[xi][yj] = source(xi, yj, u[xi][yj], tn);*/
+		  	u[xi][yj] += source(xi, yj, tn);
 
 		auto find_in_list = []( std::initializer_list<size_t> l, size_t val)
 		{
 			return std::find( l.begin(), l.end(), val ) != l.end();
 		};
 
-		// calc Yanenko
-		static const std::initializer_list<size_t> trace_points{}; // {0,1}
+		// you can enumarate tn for trace Yanenko method, example trace_points{0,1}
+		static const std::initializer_list<size_t> trace_points{};
 		bool btrace = find_in_list( trace_points, tn );
 		
+		// calc Yanennko method
 		vec2D_t<double> u_tn = calc_Yanenko( u, alpha, dx, dy, dt, btrace );
 	
+		// you can enumarate tn for print u(tn)
 		static const std::initializer_list<size_t> check_points{0, 1, 2, Nt/10, Nt/4, Nt/2, Nt*3/4, Nt-1 };
 		bool bprn = find_in_list( check_points, tn );
 		
