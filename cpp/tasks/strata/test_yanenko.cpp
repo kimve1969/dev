@@ -62,7 +62,7 @@ namespace
 	{
 		auto operator()(size_t xi, size_t yj)
 		{
-			return 0.0d /* const, maybe exchange */;
+			return 0.0 /* const, maybe exchange */;
 		}
 	};
 
@@ -70,7 +70,7 @@ namespace
 	{
 		auto operator()(size_t yj, size_t tn)
 		{
-			return 20.0d /* const, maybe exchange */; 
+			return 20.0 /* const, maybe exchange */; 
 		}
 	};
 
@@ -78,7 +78,7 @@ namespace
 	{
 		auto operator()(size_t yj, size_t tn)
 		{
-			return 20.0d; //5.0d /* const, maybe exchange */;
+			return 20.0; //5.0 /* const, maybe exchange */;
 		}
 	};
 
@@ -86,7 +86,7 @@ namespace
 	{
 		auto operator()(size_t xi, size_t tn)
 		{
-			return 20.0d; //20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
+			return 20.0; //20.0 - (15.0 / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
@@ -94,7 +94,7 @@ namespace
 	{
 		auto operator()(size_t xi, size_t tn)
 		{
-			return 20.0;//20.0d - (15.0d / num_x_nodes ) * xi /* const, maybe exchange */;
+			return 20.0;//20.0 - (15.0 / num_x_nodes ) * xi /* const, maybe exchange */;
 		}
 	};
 
@@ -106,11 +106,11 @@ namespace
 			size_t cy = num_y_nodes / 2;
 			if( (cx-1 <= xi) && (xi <= cx+1 ) && (cy-1 <= yj) && (yj <= cy+1) )
 			{
-				return tn < 50 ? -2.0d /* turn on */ : 0.0d /* turn off */;
+				return tn < 50 ? -2.0 /* turn on */ : 0.0 /* turn off */;
 			}
 			else
 			{
-				return 0.0d;
+				return 0.0;
 			}
 		}
 	};

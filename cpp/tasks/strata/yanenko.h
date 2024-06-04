@@ -28,21 +28,21 @@ namespace
 	{
 		if( prn ) std::cout << "-------------------------- Start Yanenko method --------------------- \n";
 		const size_t Nx{ u.size() } /*x*/, Ny{ u[0].size() /*y*/ };
-		vec2D_t v( Nx, Ny, 0.0d ); // v is 	u[tn+1/2]
-		vec2D_t w( Nx, Ny, 0.0d ); // w is 	u[tn+1]
+		vec2D_t v( Nx, Ny, 0.0 ); // v is 	u[tn+1/2]
+		vec2D_t w( Nx, Ny, 0.0 ); // w is 	u[tn+1]
 		
 		prn2D("u:\n", u, prn);
 		
 		// Step 1
 		for( size_t yj = 1; yj < Ny-1 /*y*/ ; ++yj )
 		{
-			vec1D_t a(Nx-2, 0.0d), b(Nx-2, 0.0d), c(Nx-2, 0.0d), d(Nx-2, 0.0d); 
+			vec1D_t a(Nx-2, 0.0), b(Nx-2, 0.0), c(Nx-2, 0.0), d(Nx-2, 0.0); 
 			for( size_t xi = 1; xi < Nx-1 /*x*/; ++xi )
 			{
 				T r = dt * alpha[xi][yj] / (dx*dx);
-				a[xi-1] = c[xi-1] = r / 2.0d;
-				b[xi-1] = -(1.0d + r);
-				d[xi-1] = -u[xi][yj] /* u[tn] */;// + 0.5 * source(xi, yj, -u[xi][yj], tn);
+				a[xi-1] = c[xi-1] = r / 2.0;
+				b[xi-1] = -(1.0 + r);
+				d[xi-1] = -u[xi][yj]/* u[tn] */;
 			}
 
 			d[0] 	+= -a[0] * u[0][yj] /* x0 bound */; 
@@ -64,13 +64,13 @@ namespace
 		// Step 2
 		for( size_t xi = 1; xi < Nx-1 /*x*/ ; ++xi )
 		{
-			vec1D_t a(Ny-2, 0.0d), b(Ny-2, 0.0d), c(Ny-2, 0.0d), d(Ny-2, 0.0d); 
+			vec1D_t a(Ny-2, 0.0), b(Ny-2, 0.0), c(Ny-2, 0.0), d(Ny-2, 0.0); 
 			for( size_t yj = 1; yj < Ny-1 /*y*/; ++yj )
 			{
 				T r = dt * alpha[xi][yj] / (dy*dy);
-				a[yj-1] = c[yj-1] = r / 2.0d;
-				b[yj-1] = -(1.0d + r);
-				d[yj-1] = -v[xi][yj]/* u[tn+1/2] */;// + 0.5 * source(xi, yj, -u[xi][yj], tn);
+				a[yj-1] = c[yj-1] = r / 2.0;
+				b[yj-1] = -(1.0 + r);
+				d[yj-1] = -v[xi][yj]/* u[tn+1/2] */;
 			}
 
 			d[0] 	+= -a[0] * u[xi][0] /* y0 bound */; 

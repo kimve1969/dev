@@ -1,8 +1,17 @@
+CXX=gcc
+CFLAGS=-std=c++17
+CLIBS=-lstdc++ -lm
+
 heat_eq_2d:
 	clear
-	gcc heat_eq_2d.cpp -o heat_eq_2d -lstdc++ -lm -std=c++17
-	./heat_eq_2d
-	rm heat_eq_2d
+	$(CXX) main.cpp -o main $(CFLAGS) $(CLIBS)
+	./main
+	rm main
+test_yanenko: 
+	clear
+	$(CXX) test_yanenko.cpp -o test_yanenko $(CFLAGS) $(CLIBS)
+	./test_yanenko
+	rm test_yanenko
 heat_eq_1d_implicit:
 	clear
 	gcc heat_eq_1d_implicit.cpp -o heat_eq_1d_implicit -lstdc++ -std=c++17

@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 #include<vector>
+#include<algorithm>
 
 namespace
 {
@@ -63,5 +64,17 @@ namespace
 			}
 			std::cout<<"\n";
 		};
+	
+	// least square method
+	template<typename T>
+		T calc_lsm(const vec2D_t<T> &u, const vec2D_t<T> &w)
+		{
+			T res{0.0};
+			for( size_t xi = 0; xi < u.size(); ++ xi )
+				for( size_t yj = 0; yj < u[0].size(); ++yj )
+					res += std::abs( u[xi][yj] * u[xi][yj] - w[xi][yj] * w[xi][yj] );
+
+			return res;
+		}
 }
 
