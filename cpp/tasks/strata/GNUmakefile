@@ -1,10 +1,10 @@
-CXX=gcc
-CFLAGS=-std=c++17
+CXX=clang
+CFLAGS=-std=c++17 -O2
 CLIBS=-lstdc++ -lm
 
 heat_eq_2d:
 	clear
-	$(CXX) main.cpp -o main $(CFLAGS) $(CLIBS)
+	$(CXX) main.cpp -o main $(CFLAGS) $(CLIBS) -I/usr/include/clang
 	./main
 	rm main
 test_yanenko: 

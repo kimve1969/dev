@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 	vec2D_t<double> alpha_tuning( Nx+1, Ny+1, (cnst_alpha_max + cnst_alpha_min)*0.5 );
 	prn2D("alpha tuning initial\n", alpha_tuning);
 
-	std::cout<< "sigma * Nx * Ny = "<< sigma * Nx * Ny <<"\n";
+	//std::cout<< "sigma * Nx * Ny = "<< sigma * Nx * Ny <<"\n";
 
 	// tuning at inner area alpha [1;N-1]
 	vec2D_t alpha_min(Nx+1, Ny+1, cnst_alpha_min);
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 				alpha_tuning[xi][yj] = alpha_optim[xi][yj];
 
 				lsm[xi][yj] = (lsm1 < lsm2 ? lsm1 : lsm2); 
-				std::cout << lsm[xi][yj] <<", ";
+				//std::cout << lsm[xi][yj] <<", ";
 			}
 	}
 
