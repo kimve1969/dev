@@ -1,4 +1,4 @@
-CXX=gcc
+CXX=clang
 CFLAGS=-std=c++17 -O1
 CLIBS=-lstdc++ -lm
 
