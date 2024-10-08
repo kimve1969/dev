@@ -1,6 +1,6 @@
 #include<iostream>
 
-void f() { throw -1; }
+void f() noexcept { throw -1; }
 void g() {};
 void h() noexcept {};
 struct S{};
@@ -19,7 +19,7 @@ struct B{
 };
 
 int main(){
-  constexpr bool b1{ noexcept(f()) }; // false 
+  constexpr bool b1{ noexcept(f()) }; // true, as it has noexcept specification 
   constexpr bool b2{ noexcept(g()) }; // false, as default function is false noexception
   constexpr bool b3{ noexcept(h()) }; // true
   constexpr bool b4{ noexcept(S()) }; // true, as default cnt S is noexception
