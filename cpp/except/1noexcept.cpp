@@ -14,8 +14,12 @@ struct A{
   A(){}; // cnt user-defined is noexcept(false)
 };
 struct B{
-  A b;
+  A a;
   B()= default; //
+};
+struct C{
+  C() = default;
+  C(const C&) noexcept {};
 };
 
 int main(){
@@ -26,6 +30,8 @@ int main(){
   constexpr bool b5{ noexcept(G()) }; // false, as explisit cnt G is noexcept(false)
   constexpr bool b6{ noexcept(H()) }; // true, but when H() thow exception, process call std::terminate()
   constexpr bool b7{ noexcept(B()) }; // false, as cnt A() is user-defined
+  C c;
+  constexpr bool b8{ noexcept(C(c)) }; // true, user-defined cnt copy C(const C&)  with noexcept
   
   std::cout<<std::boolalpha;
   
@@ -36,6 +42,7 @@ int main(){
   std::cout<<"b5 == "<<b5<<std::endl;
   std::cout<<"b6 == "<<b6<<std::endl;
   std::cout<<"b7 == "<<b7<<std::endl;
+  std::cout<<"b8 == "<<b8<<std::endl;
   
   return 0;
 }
